@@ -380,7 +380,6 @@ func (r *opsRepository) listHourlyMetricsRows(ctx context.Context, filter *servi
 
 	where := "bucket_start >= ? AND bucket_start < ?"
 	args := []any{start.UTC(), end.UTC()}
-	idx := 3
 
 	platform := ""
 	groupID := (*int64)(nil)
@@ -393,7 +392,6 @@ func (r *opsRepository) listHourlyMetricsRows(ctx context.Context, filter *servi
 	case groupID != nil && *groupID > 0:
 		where += " AND group_id = ?"
 		args = append(args, *groupID)
-		idx++
 		if platform != "" {
 			where += " AND platform = ?"
 			args = append(args, platform)

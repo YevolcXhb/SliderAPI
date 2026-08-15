@@ -655,13 +655,13 @@ func splitSQLStatements(content string) []string {
 				i++
 			}
 			if i < len(content) {
-				buf.WriteByte('\n')
+				_ = buf.WriteByte('\n')
 			}
 			continue
 		}
 		if c == '\'' {
 			inSingle = !inSingle
-			buf.WriteByte(c)
+			_ = buf.WriteByte(c)
 			continue
 		}
 		if c == ';' && !inSingle {
@@ -672,7 +672,7 @@ func splitSQLStatements(content string) []string {
 			buf.Reset()
 			continue
 		}
-		buf.WriteByte(c)
+		_ = buf.WriteByte(c)
 	}
 	if rest := strings.TrimSpace(buf.String()); rest != "" {
 		out = append(out, rest)

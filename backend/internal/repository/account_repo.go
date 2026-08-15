@@ -1090,12 +1090,10 @@ func (r *accountRepository) BatchUpdateLastUsed(ctx context.Context, updates map
 	args := make([]any, 0, len(updates)*2+1)
 	caseSQL := "UPDATE accounts SET last_used_at = CASE id"
 
-	idx := 1
 	for id, ts := range updates {
 		caseSQL += " WHEN ? THEN ?"
 		args = append(args, id, ts)
 		ids = append(ids, id)
-		idx += 2
 	}
 
 	caseSQL += " END, updated_at = NOW() WHERE FIND_IN_SET(id, ?) AND deleted_at IS NULL"
@@ -1789,61 +1787,51 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 	setClauses := make([]string, 0, 8)
 	args := make([]any, 0, 8)
 
-	idx := 1
 	if updates.Name != nil {
-		setClauses = append(setClauses, "name = $"+itoa(idx))
+		setClauses = append(setClauses, "name = ?")
 		args = append(args, *updates.Name)
-		idx++
 	}
 	if updates.ProxyID != nil {
 		// 0 表示清除代理（前端发送 0 而不是 null 来表达清除意图）
 		if *updates.ProxyID == 0 {
 			setClauses = append(setClauses, "proxy_id = NULL")
 		} else {
-			setClauses = append(setClauses, "proxy_id = $"+itoa(idx))
+			setClauses = append(setClauses, "proxy_id = ?")
 			args = append(args, *updates.ProxyID)
-			idx++
 		}
 		setClauses = append(setClauses, "proxy_fallback_origin_id = NULL")
 	}
 	if updates.Concurrency != nil {
-		setClauses = append(setClauses, "concurrency = $"+itoa(idx))
+		setClauses = append(setClauses, "concurrency = ?")
 		args = append(args, *updates.Concurrency)
-		idx++
 	}
 	if updates.Priority != nil {
-		setClauses = append(setClauses, "priority = $"+itoa(idx))
+		setClauses = append(setClauses, "priority = ?")
 		args = append(args, *updates.Priority)
-		idx++
 	}
 	if updates.RateMultiplier != nil {
-		setClauses = append(setClauses, "rate_multiplier = $"+itoa(idx))
+		setClauses = append(setClauses, "rate_multiplier = ?")
 		args = append(args, *updates.RateMultiplier)
-		idx++
 	}
 	if updates.LoadFactor != nil {
 		if *updates.LoadFactor <= 0 {
 			setClauses = append(setClauses, "load_factor = NULL")
 		} else {
-			setClauses = append(setClauses, "load_factor = $"+itoa(idx))
+			setClauses = append(setClauses, "load_factor = ?")
 			args = append(args, *updates.LoadFactor)
-			idx++
 		}
 	}
 	if updates.Status != nil {
-		setClauses = append(setClauses, "status = $"+itoa(idx))
+		setClauses = append(setClauses, "status = ?")
 		args = append(args, *updates.Status)
-		idx++
 	}
 	if updates.Schedulable != nil {
-		setClauses = append(setClauses, "schedulable = $"+itoa(idx))
+		setClauses = append(setClauses, "schedulable = ?")
 		args = append(args, *updates.Schedulable)
-		idx++
 	}
 	if updates.AccountLevel != nil {
-		setClauses = append(setClauses, "account_level = $"+itoa(idx))
+		setClauses = append(setClauses, "account_level = ?")
 		args = append(args, service.NormalizeAccountLevel(*updates.AccountLevel))
-		idx++
 	}
 	// JSONB 需要合并而非覆盖，使用 raw SQL 保持旧行为。
 	if len(updates.Credentials) > 0 {
@@ -1853,7 +1841,6 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 		}
 		setClauses = append(setClauses, "credentials = JSON_MERGE_PATCH(COALESCE(credentials, '{}'), ?)")
 		args = append(args, payload)
-		idx++
 	}
 	if len(updates.Extra) > 0 {
 		payload, err := json.Marshal(updates.Extra)
@@ -1862,7 +1849,6 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 		}
 		setClauses = append(setClauses, "extra = JSON_MERGE_PATCH(COALESCE(extra, '{}'), ?)")
 		args = append(args, payload)
-		idx++
 	}
 
 	if len(setClauses) == 0 {

@@ -32,7 +32,7 @@ func main() {
 		fmt.Println("open:", err)
 		os.Exit(1)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if _, err := db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", dbName)); err != nil {
 		fmt.Println("drop db:", err)
@@ -56,16 +56,16 @@ func main() {
 	fmt.Println("MIGRATION OK")
 
 	// Smoke-test the real application startup path (migrations + bootstrap secrets).
-	os.Setenv("DATABASE_HOST", host)
-	os.Setenv("DATABASE_PORT", port)
-	os.Setenv("DATABASE_USER", user)
-	os.Setenv("DATABASE_PASSWORD", pass)
-	os.Setenv("DATABASE_DBNAME", dbName)
-	os.Setenv("TZ", "Asia/Shanghai")
-	os.Setenv("SERVER_HOST", "0.0.0.0")
-	os.Setenv("SERVER_PORT", "8080")
-	os.Setenv("JWT_EXPIRE_HOUR", "24")
-	os.Setenv("TOTP_ENCRYPTION_KEY", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+	_ = os.Setenv("DATABASE_HOST", host)
+	_ = os.Setenv("DATABASE_PORT", port)
+	_ = os.Setenv("DATABASE_USER", user)
+	_ = os.Setenv("DATABASE_PASSWORD", pass)
+	_ = os.Setenv("DATABASE_DBNAME", dbName)
+	_ = os.Setenv("TZ", "Asia/Shanghai")
+	_ = os.Setenv("SERVER_HOST", "0.0.0.0")
+	_ = os.Setenv("SERVER_PORT", "8080")
+	_ = os.Setenv("JWT_EXPIRE_HOUR", "24")
+	_ = os.Setenv("TOTP_ENCRYPTION_KEY", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
 	cfg, err := config.LoadForBootstrap()
 	if err != nil {
 		fmt.Println("LOAD CONFIG FAILED:", err)

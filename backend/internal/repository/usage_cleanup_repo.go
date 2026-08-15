@@ -653,54 +653,44 @@ func (r *usageCleanupRepository) DeleteUsageLogsBatch(ctx context.Context, filte
 func buildUsageCleanupWhere(filters service.UsageCleanupFilters) (string, []any) {
 	conditions := make([]string, 0, 8)
 	args := make([]any, 0, 8)
-	idx := 1
 	if !filters.StartTime.IsZero() {
 		conditions = append(conditions, "created_at >= ?")
 		args = append(args, filters.StartTime)
-		idx++
 	}
 	if !filters.EndTime.IsZero() {
 		conditions = append(conditions, "created_at <= ?")
 		args = append(args, filters.EndTime)
-		idx++
 	}
 	if filters.UserID != nil {
 		conditions = append(conditions, "user_id = ?")
 		args = append(args, *filters.UserID)
-		idx++
 	}
 	if filters.APIKeyID != nil {
 		conditions = append(conditions, "api_key_id = ?")
 		args = append(args, *filters.APIKeyID)
-		idx++
 	}
 	if filters.AccountID != nil {
 		conditions = append(conditions, "account_id = ?")
 		args = append(args, *filters.AccountID)
-		idx++
 	}
 	if filters.GroupID != nil {
 		conditions = append(conditions, "group_id = ?")
 		args = append(args, *filters.GroupID)
-		idx++
 	}
 	if filters.Model != nil {
 		model := strings.TrimSpace(*filters.Model)
 		if model != "" {
 			conditions = append(conditions, "model = ?")
 			args = append(args, model)
-			idx++
 		}
 	}
 	if filters.RequestType != nil {
-		condition, conditionArgs := buildRequestTypeFilterCondition(idx, *filters.RequestType)
+		condition, conditionArgs := buildRequestTypeFilterCondition(0, *filters.RequestType)
 		conditions = append(conditions, condition)
 		args = append(args, conditionArgs...)
-		idx += len(conditionArgs)
 	} else if filters.Stream != nil {
 		conditions = append(conditions, "stream = ?")
 		args = append(args, *filters.Stream)
-		idx++
 	}
 	if filters.BillingType != nil {
 		conditions = append(conditions, "billing_type = ?")

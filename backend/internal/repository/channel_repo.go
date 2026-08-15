@@ -184,17 +184,15 @@ func (r *channelRepository) Delete(ctx context.Context, id int64) error {
 func (r *channelRepository) List(ctx context.Context, params pagination.PaginationParams, status, search string) ([]service.Channel, *pagination.PaginationResult, error) {
 	where := []string{"1=1"}
 	args := []any{}
-	argIdx := 1
 
 	if status != "" {
 		where = append(where, "c.status = ?")
 		args = append(args, status)
-		argIdx++
 	}
 	if search != "" {
 		where = append(where, "LOWER((c.name) LIKE LOWER(?) OR LOWER(c.description) LIKE LOWER(?))")
-		args = append(args, "%"+escapeLike(search)+"%")
-		argIdx++
+		like := "%" + escapeLike(search) + "%"
+		args = append(args, like, like)
 	}
 
 	whereClause := strings.Join(where, " AND ")
