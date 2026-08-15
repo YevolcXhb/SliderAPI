@@ -636,7 +636,7 @@ func (s *UsageCleanupService) effectiveAutoRetentionConfig(ctx context.Context) 
 	defer cancel()
 	raw, err := s.settingRepo.GetValue(dbCtx, settingKeyUsageRetention)
 	if err != nil || strings.TrimSpace(raw) == "" {
-		if err != nil {
+		if err != nil && !errors.Is(err, ErrSettingNotFound) {
 			logger.LegacyPrintf("service.usage_cleanup", "[UsageCleanup] load dynamic auto retention config failed, using config file defaults: %v", err)
 		}
 		return cfg

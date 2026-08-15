@@ -2649,7 +2649,13 @@ func (r *usageLogRepository) getUserAccountSharingAccountStats(ctx context.Conte
 			ISNULL(p.account_id), p.account_id DESC
 	`
 
-	rows, err := r.sql.QueryContext(ctx, query, userID, startTime, endTime, pageSize, (page-1)*pageSize)
+	// Placeholder order: self_usage owner/user/time range, external_usage
+	// owner/time range, account_stats owner, then pagination.
+	rows, err := r.sql.QueryContext(ctx, query,
+		userID, userID, startTime, endTime,
+		userID, startTime, endTime,
+		userID, pageSize, (page-1)*pageSize,
+	)
 	if err != nil {
 		return nil, usagestats.AccountSharingSummary{}, usagestats.AccountSharingAccountPage{}, err
 	}
@@ -2810,7 +2816,12 @@ func (r *usageLogRepository) getUserAccountSharingTrend(ctx context.Context, use
 		ORDER BY date ASC
 	`, dateFormat, dateFormat)
 
-	rows, err := r.sql.QueryContext(ctx, query, userID, startTime, endTime)
+	// Placeholder order: self_usage owner/user/time range, external_usage
+	// owner/time range.
+	rows, err := r.sql.QueryContext(ctx, query,
+		userID, userID, startTime, endTime,
+		userID, startTime, endTime,
+	)
 	if err != nil {
 		return nil, err
 	}

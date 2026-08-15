@@ -32,7 +32,7 @@ func TestGetUserAccountSharingAccountStatsExcludesPrivateAccountDetails(t *testi
 	)
 
 	mock.ExpectQuery(`(?s)paged_accounts AS \(\s*SELECT \*\s*FROM account_stats\s*WHERE share_mode = 'public'`).
-		WithArgs(int64(7), start, end, 20, 0).
+		WithArgs(int64(7), int64(7), start, end, int64(7), start, end, int64(7), 20, 0).
 		WillReturnRows(rows)
 
 	accounts, summary, page, err := repo.getUserAccountSharingAccountStats(context.Background(), 7, start, end, 1, 20)

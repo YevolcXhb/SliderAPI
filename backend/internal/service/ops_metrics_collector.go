@@ -468,6 +468,9 @@ WHERE created_at >= ? AND created_at < ?
 		var avg sql.NullFloat64
 		var max sql.NullInt64
 		if err := c.db.QueryRowContext(ctx, q, start, end).Scan(&p50, &p90, &p95, &p99, &avg, &max); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return opsCollectedPercentiles{}, opsCollectedPercentiles{}, nil
+			}
 			return opsCollectedPercentiles{}, opsCollectedPercentiles{}, err
 		}
 		duration.p50 = floatToIntPtr(p50)
@@ -501,6 +504,9 @@ WHERE created_at >= ? AND created_at < ?
 		var avg sql.NullFloat64
 		var max sql.NullInt64
 		if err := c.db.QueryRowContext(ctx, q, start, end).Scan(&p50, &p90, &p95, &p99, &avg, &max); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return opsCollectedPercentiles{}, opsCollectedPercentiles{}, nil
+			}
 			return opsCollectedPercentiles{}, opsCollectedPercentiles{}, err
 		}
 		ttft.p50 = floatToIntPtr(p50)
