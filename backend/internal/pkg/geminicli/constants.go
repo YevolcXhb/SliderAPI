@@ -39,9 +39,9 @@ const (
 	// They enable the "login without creating your own OAuth client" experience, but Google may
 	// restrict which scopes are allowed for this client.
 	// GeminiCLIOAuthClientID defaults to a placeholder. Set GEMINI_CLI_OAUTH_CLIENT_ID to provide the real client ID.
-	GeminiCLIOAuthClientID = "YOUR_GEMINI_CLI_OAUTH_CLIENT_ID"
+	GeminiCLIOAuthClientID = "681255809395-oo8ft2oprdrnp9e3aqf6av3hmdib135j.apps.googleusercontent.com"
 	// GeminiCLIOAuthClientSecret defaults to empty. Set GEMINI_CLI_OAUTH_CLIENT_SECRET to provide the real client secret.
-	GeminiCLIOAuthClientSecret = ""
+	GeminiCLIOAuthClientSecret = "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"
 
 	// GeminiCLIOAuthClientSecretEnv is the environment variable name for the built-in client secret.
 	GeminiCLIOAuthClientSecretEnv = "GEMINI_CLI_OAUTH_CLIENT_SECRET"

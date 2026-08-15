@@ -50,12 +50,12 @@ const (
 )
 
 // defaultUserAgentVersion 可通过环境变量 ANTIGRAVITY_USER_AGENT_VERSION 配置，默认 1.20.5
-var ClientID = "YOUR_ANTIGRAVITY_OAUTH_CLIENT_ID"
+var ClientID = "1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com"
 
 var defaultUserAgentVersion = "1.21.9"
 
 // defaultClientSecret 可通过环境变量 ANTIGRAVITY_OAUTH_CLIENT_SECRET 配置
-var defaultClientSecret = ""
+var defaultClientSecret = "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"
 
 func init() {
 	// 从环境变量读取版本号，未设置则使用默认值
