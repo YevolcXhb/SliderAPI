@@ -48,7 +48,7 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 
 	// 统一使用 ent 的事务：保证用户与允许分组的更新原子化，
 	// 并避免基于 *sql.Tx 手动构造 ent client 导致的 ExecQuerier 断言错误。
-	tx, err := r.client.Tx(ctx)
+	tx, err := clientFromContext(ctx, r.client).Tx(ctx)
 	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
 		return err
 	}
@@ -198,7 +198,7 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 	}
 
 	// 使用 ent 事务包裹用户更新与 allowed_groups 同步，避免跨层事务不一致。
-	tx, err := r.client.Tx(ctx)
+	tx, err := clientFromContext(ctx, r.client).Tx(ctx)
 	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
 		return err
 	}
@@ -375,7 +375,7 @@ func normalizeEmailAuthIdentitySubject(email string) string {
 }
 
 func (r *userRepository) Delete(ctx context.Context, id int64) error {
-	tx, err := r.client.Tx(ctx)
+	tx, err := clientFromContext(ctx, r.client).Tx(ctx)
 	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
 		return translatePersistenceError(err, service.ErrUserNotFound, nil)
 	}
@@ -610,8 +610,9 @@ func userListOrder(params pagination.PaginationParams) []func(*entsql.Selector) 
 		}
 		if nullsLastField {
 			return []func(*entsql.Selector){
-				entsql.OrderByField(field, entsql.OrderNullsLast()).ToFunc(),
-				dbent.Asc(dbuser.FieldID),
+				func(s *entsql.Selector) {
+					s.OrderExpr(entsql.Expr("ISNULL(" + field + ") ASC, " + field + " ASC, " + dbuser.FieldID + " ASC"))
+				},
 			}
 		}
 		return []func(*entsql.Selector){dbent.Asc(field), dbent.Asc(dbuser.FieldID)}
@@ -621,8 +622,9 @@ func userListOrder(params pagination.PaginationParams) []func(*entsql.Selector) 
 	}
 	if nullsLastField {
 		return []func(*entsql.Selector){
-			entsql.OrderByField(field, entsql.OrderDesc(), entsql.OrderNullsLast()).ToFunc(),
-			dbent.Desc(dbuser.FieldID),
+			func(s *entsql.Selector) {
+				s.OrderExpr(entsql.Expr("ISNULL(" + field + ") ASC, " + field + " DESC, " + dbuser.FieldID + " DESC"))
+			},
 		}
 	}
 	return []func(*entsql.Selector){dbent.Desc(field), dbent.Desc(dbuser.FieldID)}
@@ -676,21 +678,27 @@ func (r *userRepository) GetLatestUsedAtByUserID(ctx context.Context, userID int
 }
 
 func userLastUsedAtOrder(sortOrder string) []func(*entsql.Selector) {
-	orderExpr := func(direction, nulls string, tieOrder func(string) string) func(*entsql.Selector) {
+	orderExpr := func(nullsFirst bool, tieOrder func(string) string) func(*entsql.Selector) {
 		return func(s *entsql.Selector) {
 			subquery := fmt.Sprintf("(SELECT MAX(created_at) FROM usage_logs WHERE user_id = %s)", s.C(dbuser.FieldID))
-			s.OrderExpr(entsql.Expr(subquery + " " + direction + " NULLS " + nulls))
+			nullsDir := "ASC"
+			direction := "DESC"
+			if nullsFirst {
+				nullsDir = "DESC"
+				direction = "ASC"
+			}
+			s.OrderExpr(entsql.Expr("ISNULL(" + subquery + ") " + nullsDir + ", " + subquery + " " + direction))
 			s.OrderBy(tieOrder(s.C(dbuser.FieldID)))
 		}
 	}
 
 	if sortOrder == pagination.SortOrderAsc {
 		return []func(*entsql.Selector){
-			orderExpr("ASC", "FIRST", entsql.Asc),
+			orderExpr(true, entsql.Asc),
 		}
 	}
 	return []func(*entsql.Selector){
-		orderExpr("DESC", "LAST", entsql.Desc),
+		orderExpr(false, entsql.Desc),
 	}
 }
 

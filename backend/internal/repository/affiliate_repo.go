@@ -293,7 +293,7 @@ func (r *affiliateRepository) AccrueQuota(ctx context.Context, inviterID, invite
 		} else {
 			updateSQL = "UPDATE user_affiliates SET aff_quota = aff_quota + ?, aff_history_quota = aff_history_quota + ?, updated_at = NOW() WHERE user_id = ?"
 		}
-		res, err := txClient.ExecContext(txCtx, updateSQL, amount, inviterID)
+		res, err := txClient.ExecContext(txCtx, updateSQL, amount, amount, inviterID)
 		if err != nil {
 			return err
 		}
@@ -386,7 +386,7 @@ UPDATE user_affiliates
 SET aff_quota = aff_quota + ?,
     aff_frozen_quota = GREATEST(aff_frozen_quota - ?, 0),
     updated_at = NOW()
-WHERE user_id = ?`, thawed, userID)
+WHERE user_id = ?`, thawed, thawed, userID)
 	if err != nil {
 		return 0, fmt.Errorf("move thawed quota: %w", err)
 	}
@@ -415,6 +415,9 @@ WHERE user_id = ?
   AND aff_quota > 0
 FOR UPDATE`, []any{userID}, &claimed)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return service.ErrAffiliateQuotaEmpty
+			}
 			return fmt.Errorf("claim affiliate quota: %w", err)
 		}
 		if claimed <= 0 {
@@ -956,7 +959,7 @@ WHERE (ua.aff_code_custom = true OR ua.aff_rebate_rate_percent IS NOT NULL)
 
 	client := clientFromContext(ctx, r.client)
 
-	total, err := scanInt64(ctx, client, "SELECT COUNT(*)"+baseFrom, likePattern)
+	total, err := scanInt64(ctx, client, "SELECT COUNT(*)"+baseFrom, likePattern, likePattern)
 	if err != nil {
 		return nil, 0, fmt.Errorf("count affiliate admin entries: %w", err)
 	}
@@ -972,7 +975,7 @@ SELECT ua.user_id,
 ORDER BY ua.updated_at DESC
 LIMIT ? OFFSET ?`
 
-	rows, err := client.QueryContext(ctx, listQuery, likePattern, pageSize, offset)
+	rows, err := client.QueryContext(ctx, listQuery, likePattern, likePattern, pageSize, offset)
 	if err != nil {
 		return nil, 0, fmt.Errorf("list affiliate admin entries: %w", err)
 	}

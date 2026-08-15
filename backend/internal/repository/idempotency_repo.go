@@ -126,10 +126,10 @@ func (r *idempotencyRepository) TryReclaim(
 			AND (locked_until IS NULL OR locked_until <= ?)
 	`
 	res, err := r.sql.ExecContext(ctx, query,
-		id,
 		service.IdempotencyStatusProcessing,
 		newLockedUntil,
 		newExpiresAt,
+		id,
 		fromStatus,
 		now,
 	)
@@ -162,9 +162,9 @@ func (r *idempotencyRepository) ExtendProcessingLock(
 	res, err := r.sql.ExecContext(
 		ctx,
 		query,
-		id,
 		newLockedUntil,
 		newExpiresAt,
+		id,
 		service.IdempotencyStatusProcessing,
 		requestFingerprint,
 	)
@@ -191,11 +191,11 @@ func (r *idempotencyRepository) MarkSucceeded(ctx context.Context, id int64, res
 		WHERE id = ?
 	`
 	_, err := r.sql.ExecContext(ctx, query,
-		id,
 		service.IdempotencyStatusSucceeded,
 		responseStatus,
 		responseBody,
 		expiresAt,
+		id,
 	)
 	return err
 }
@@ -211,11 +211,11 @@ func (r *idempotencyRepository) MarkFailedRetryable(ctx context.Context, id int6
 		WHERE id = ?
 	`
 	_, err := r.sql.ExecContext(ctx, query,
-		id,
 		service.IdempotencyStatusFailedRetryable,
 		errorReason,
 		lockedUntil,
 		expiresAt,
+		id,
 	)
 	return err
 }

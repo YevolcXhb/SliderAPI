@@ -286,7 +286,7 @@ RETURNING id
 
 	var linuxDoMalformedMetadataType string
 	require.NoError(t, tx.QueryRowContext(ctx, `
-SELECT JSON_TYPE(metadata)
+SELECT LOWER(JSON_TYPE(metadata))
 FROM auth_identities
 WHERE user_id = ?
   AND provider_type = 'linuxdo'
@@ -297,7 +297,7 @@ WHERE user_id = ?
 
 	var linuxDoArrayMetadataType string
 	require.NoError(t, tx.QueryRowContext(ctx, `
-SELECT JSON_TYPE(metadata)
+SELECT LOWER(JSON_TYPE(metadata))
 FROM auth_identities
 WHERE user_id = ?
   AND provider_type = 'linuxdo'
@@ -308,7 +308,7 @@ WHERE user_id = ?
 
 	var wechatUnionArrayMetadataType string
 	require.NoError(t, tx.QueryRowContext(ctx, `
-SELECT JSON_TYPE(metadata)
+SELECT LOWER(JSON_TYPE(metadata))
 FROM auth_identities
 WHERE user_id = ?
   AND provider_type = 'wechat'
@@ -319,7 +319,7 @@ WHERE user_id = ?
 
 	var invalidJSONReportDetailsType string
 	require.NoError(t, tx.QueryRowContext(ctx, `
-SELECT JSON_TYPE(details)
+SELECT LOWER(JSON_TYPE(details))
 FROM auth_identity_migration_reports
 WHERE report_type = 'legacy_external_identity_invalid_metadata_json'
   AND report_key = ?
@@ -328,7 +328,7 @@ WHERE report_type = 'legacy_external_identity_invalid_metadata_json'
 
 	var openIDOnlyReportDetailsType string
 	require.NoError(t, tx.QueryRowContext(ctx, `
-SELECT JSON_TYPE(details)
+SELECT LOWER(JSON_TYPE(details))
 FROM auth_identity_migration_reports
 WHERE report_type = 'wechat_openid_only_requires_remediation'
   AND report_key = ?
@@ -345,7 +345,7 @@ WHERE id IN (
 	WHERE (user_id = ? AND provider_subject = 'linuxdo-array')
 	   OR (user_id = ? AND provider_subject = 'union-array')
 )
-  AND metadata ? '_legacy_metadata_raw_json'
+  AND JSON_EXTRACT(metadata, '$._legacy_metadata_raw_json') IS NOT NULL
 `, linuxDoArrayUserID, wechatUnionArrayUserID).Scan(&preservedArrayMetadataCount))
 	require.Equal(t, 2, preservedArrayMetadataCount)
 
@@ -849,7 +849,7 @@ func TestAuthIdentityMigrationReportTypeWideningPreflightKeeps109And116SafeBefor
 
 	_, err = tx.ExecContext(ctx, `
 ALTER TABLE auth_identity_migration_reports
-ALTER COLUMN report_type TYPE VARCHAR(40);
+MODIFY COLUMN report_type VARCHAR(40) NOT NULL;
 `)
 	require.NoError(t, err)
 
@@ -892,7 +892,7 @@ RETURNING id
 	require.NoError(t, tx.QueryRowContext(ctx, `
 SELECT character_maximum_length
 FROM information_schema.columns
-WHERE table_schema = 'public'
+WHERE table_schema = DATABASE()
   AND table_name = 'auth_identity_migration_reports'
   AND column_name = 'report_type'
 `).Scan(&reportTypeWidth))
@@ -922,7 +922,7 @@ func prepareLegacyExternalIdentitiesTable(t *testing.T, tx *sql.Tx, ctx context.
 
 	_, err := tx.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS user_external_identities (
-	id BIGSERIAL PRIMARY KEY,
+	id BIGINT AUTO_INCREMENT PRIMARY KEY,
 	user_id BIGINT NOT NULL,
 	provider TEXT NOT NULL,
 	provider_user_id TEXT NOT NULL,
@@ -932,8 +932,8 @@ CREATE TABLE IF NOT EXISTS user_external_identities (
 	profile_url TEXT NOT NULL DEFAULT '',
 	avatar_url TEXT NOT NULL DEFAULT '',
 	metadata TEXT NOT NULL DEFAULT '{}',
-	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+	created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+	updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 `)
 	require.NoError(t, err)
@@ -943,17 +943,15 @@ func truncateAuthIdentityLegacyFixtureTables(t *testing.T, tx *sql.Tx, ctx conte
 	t.Helper()
 
 	_, err := tx.ExecContext(ctx, `
-TRUNCATE TABLE
-	auth_identity_channels,
-	identity_adoption_decisions,
-	pending_auth_sessions,
-	auth_identities,
-	auth_identity_migration_reports,
-	user_provider_default_grants,
-	user_avatars,
-	user_external_identities,
-	users
-RESTART IDENTITY CASCADE;
+DELETE FROM auth_identity_channels;
+DELETE FROM identity_adoption_decisions;
+DELETE FROM pending_auth_sessions;
+DELETE FROM auth_identities;
+DELETE FROM auth_identity_migration_reports;
+DELETE FROM user_provider_default_grants;
+DELETE FROM user_avatars;
+DELETE FROM user_external_identities;
+DELETE FROM users;
 `)
 	require.NoError(t, err)
 }

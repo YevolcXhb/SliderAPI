@@ -145,10 +145,10 @@ func (r *dashboardAggregationRepository) recomputeRangeInTx(ctx context.Context,
 	if _, err := r.sql.ExecContext(ctx, "DELETE FROM usage_dashboard_hourly_users WHERE bucket_start >= ? AND bucket_start < ?", hourStart, hourEnd); err != nil {
 		return err
 	}
-	if _, err := r.sql.ExecContext(ctx, "DELETE FROM usage_dashboard_daily WHERE bucket_date >= ?< ?", dayStart, dayEnd); err != nil {
+	if _, err := r.sql.ExecContext(ctx, "DELETE FROM usage_dashboard_daily WHERE bucket_date >= ? AND bucket_date < ?", dayStart, dayEnd); err != nil {
 		return err
 	}
-	if _, err := r.sql.ExecContext(ctx, "DELETE FROM usage_dashboard_daily_users WHERE bucket_date >= ?< ?", dayStart, dayEnd); err != nil {
+	if _, err := r.sql.ExecContext(ctx, "DELETE FROM usage_dashboard_daily_users WHERE bucket_date >= ? AND bucket_date < ?", dayStart, dayEnd); err != nil {
 		return err
 	}
 
@@ -330,7 +330,7 @@ func (r *dashboardAggregationRepository) insertHourlyActiveUsers(ctx context.Con
 			user_id
 		FROM usage_logs
 		WHERE created_at >= ? AND created_at < ?;`
-	_, err := r.sql.ExecContext(ctx, query, start, end, tzName)
+	_, err := r.sql.ExecContext(ctx, query, tzName, tzName, start, end)
 	return err
 }
 
@@ -339,11 +339,11 @@ func (r *dashboardAggregationRepository) insertDailyActiveUsers(ctx context.Cont
 	query := `
 		INSERT IGNORE INTO usage_dashboard_daily_users (bucket_date, user_id)
 		SELECT DISTINCT
-			(CONVERT_TZ(bucket_start, @@session.time_zone, ?)) AS bucket_date,
+			DATE(CONVERT_TZ(bucket_start, @@session.time_zone, ?)) AS bucket_date,
 			user_id
 		FROM usage_dashboard_hourly_users
 		WHERE bucket_start >= ? AND bucket_start < ?;`
-	_, err := r.sql.ExecContext(ctx, query, start, end, tzName)
+	_, err := r.sql.ExecContext(ctx, query, tzName, start, end)
 	return err
 }
 
@@ -441,7 +441,7 @@ func (r *dashboardAggregationRepository) upsertDailyAggregates(ctx context.Conte
 			NOW()
 		FROM (
 			SELECT
-				(CONVERT_TZ(bucket_start, @@session.time_zone, ?)) AS bucket_date,
+				DATE(CONVERT_TZ(bucket_start, @@session.time_zone, ?)) AS bucket_date,
 				COALESCE(SUM(total_requests), 0) AS total_requests,
 				COALESCE(SUM(input_tokens), 0) AS input_tokens,
 				COALESCE(SUM(output_tokens), 0) AS output_tokens,
@@ -453,7 +453,7 @@ func (r *dashboardAggregationRepository) upsertDailyAggregates(ctx context.Conte
 				COALESCE(SUM(total_duration_ms), 0) AS total_duration_ms
 			FROM usage_dashboard_hourly
 			WHERE bucket_start >= ? AND bucket_start < ?
-			GROUP BY (CONVERT_TZ(bucket_start, @@session.time_zone, ?))
+			GROUP BY DATE(CONVERT_TZ(bucket_start, @@session.time_zone, ?))
 		) daily
 		ON DUPLICATE KEY UPDATE total_requests = VALUES(total_requests),
 			input_tokens = VALUES(input_tokens),

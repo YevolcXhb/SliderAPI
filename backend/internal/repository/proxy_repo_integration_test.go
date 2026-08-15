@@ -306,7 +306,7 @@ func (s *ProxyRepoSuite) mustCreateProxyWithTimes(name, status string, createdAt
 		Port:     8080,
 		Status:   status,
 	})
-	_, err := s.tx.ExecContext(s.ctx, "UPDATE proxies SET created_at = ?, updated_at = ? WHERE id = ?", createdAt, p.ID)
+	_, err := s.tx.ExecContext(s.ctx, "UPDATE proxies SET created_at = ?, updated_at = ? WHERE id = ?", createdAt, createdAt, p.ID)
 	s.Require().NoError(err, "update proxy timestamps")
 	return p
 }

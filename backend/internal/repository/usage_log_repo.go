@@ -2978,7 +2978,7 @@ func (r *usageLogRepository) GetBatchUserUsageStats(ctx context.Context, userIDs
 		GROUP BY user_id
 	`
 	today := timezone.Today()
-	rows, err := r.sql.QueryContext(ctx, query, Int64CSV(normalizedUserIDs), startTime, endTime, today)
+	rows, err := r.sql.QueryContext(ctx, query, startTime, endTime, today, Int64CSV(normalizedUserIDs), startTime, endTime)
 	if err != nil {
 		return nil, err
 	}
@@ -3040,7 +3040,7 @@ func (r *usageLogRepository) GetBatchAPIKeyUsageStats(ctx context.Context, apiKe
 		GROUP BY api_key_id
 	`
 	today := timezone.Today()
-	rows, err := r.sql.QueryContext(ctx, query, Int64CSV(normalizedAPIKeyIDs), startTime, endTime, today)
+	rows, err := r.sql.QueryContext(ctx, query, startTime, endTime, today, Int64CSV(normalizedAPIKeyIDs), startTime, endTime)
 	if err != nil {
 		return nil, err
 	}

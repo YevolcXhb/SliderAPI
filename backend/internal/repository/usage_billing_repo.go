@@ -1049,8 +1049,7 @@ func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID 
 	var exhausted bool
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE api_keys
-		SET quota_used = quota_used + ?,
-			status = CASE
+		SET status = CASE
 				WHEN quota > 0
 					AND status = ?
 					AND quota_used < quota
@@ -1058,9 +1057,10 @@ func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID 
 				THEN ?
 				ELSE status
 			END,
+			quota_used = quota_used + ?,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL
-	`, amount, service.StatusAPIKeyActive, amount, service.StatusAPIKeyQuotaExhausted, apiKeyID); err != nil {
+	`, service.StatusAPIKeyActive, amount, service.StatusAPIKeyQuotaExhausted, amount, apiKeyID); err != nil {
 		return false, err
 	}
 	err := tx.QueryRowContext(ctx, `
@@ -1088,7 +1088,7 @@ func incrementUsageBillingAPIKeyRateLimit(ctx context.Context, tx *sql.Tx, apiKe
 			window_7d_start = CASE WHEN window_7d_start IS NULL OR window_7d_start + INTERVAL 7 DAY <= NOW() THEN DATE_FORMAT(NOW(), '%Y-%m-%d 00:00:00') ELSE window_7d_start END,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL
-	`, cost, apiKeyID)
+	`, cost, cost, cost, cost, cost, cost, apiKeyID)
 	if err != nil {
 		return err
 	}
@@ -1107,15 +1107,15 @@ func incrementUsageBillingAccountQuota(ctx context.Context, tx *sql.Tx, accountI
 		`UPDATE accounts SET extra = JSON_MERGE_PATCH(
 			JSON_MERGE_PATCH(
 				COALESCE(extra, '{}'),
-				JSON_OBJECT('quota_used', COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_used')) AS DECIMAL), 0) + ?)
+				JSON_OBJECT('quota_used', COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_used')) AS DECIMAL(20,10)), 0) + ?)
 			),
 			JSON_MERGE_PATCH(
-				CASE WHEN COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_limit')) AS DECIMAL), 0) > 0 THEN
+				CASE WHEN COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_limit')) AS DECIMAL(20,10)), 0) > 0 THEN
 					JSON_MERGE_PATCH(
 						JSON_OBJECT(
 							'quota_daily_used',
 							CASE WHEN `+dailyExpiredExpr+` THEN ?
-							ELSE COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_used')) AS DECIMAL), 0) + ? END,
+							ELSE COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_used')) AS DECIMAL(20,10)), 0) + ? END,
 							'quota_daily_start',
 							CASE WHEN `+dailyExpiredExpr+` THEN `+nowUTC+`
 							ELSE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_start')), `+nowUTC+`) END
@@ -1125,12 +1125,12 @@ func incrementUsageBillingAccountQuota(ctx context.Context, tx *sql.Tx, accountI
 						   ELSE '{}' END
 					)
 				ELSE '{}' END,
-				CASE WHEN COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_limit')) AS DECIMAL), 0) > 0 THEN
+				CASE WHEN COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_limit')) AS DECIMAL(20,10)), 0) > 0 THEN
 					JSON_MERGE_PATCH(
 						JSON_OBJECT(
 							'quota_weekly_used',
 							CASE WHEN `+weeklyExpiredExpr+` THEN ?
-							ELSE COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_used')) AS DECIMAL), 0) + ? END,
+							ELSE COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_used')) AS DECIMAL(20,10)), 0) + ? END,
 							'quota_weekly_start',
 							CASE WHEN `+weeklyExpiredExpr+` THEN `+nowUTC+`
 							ELSE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_start')), `+nowUTC+`) END
@@ -1149,12 +1149,12 @@ func incrementUsageBillingAccountQuota(ctx context.Context, tx *sql.Tx, accountI
 
 	rows, err := tx.QueryContext(ctx,
 		`SELECT
-			COALESCE(CAST((JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_used'))) AS DECIMAL), 0),
-			COALESCE(CAST((JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_limit'))) AS DECIMAL), 0),
-			COALESCE(CAST((JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_used'))) AS DECIMAL), 0),
-			COALESCE(CAST((JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_limit'))) AS DECIMAL), 0),
-			COALESCE(CAST((JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_used'))) AS DECIMAL), 0),
-			COALESCE(CAST((JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_limit'))) AS DECIMAL), 0)
+			COALESCE(CAST((JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_used'))) AS DECIMAL(20,10)), 0),
+			COALESCE(CAST((JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_limit'))) AS DECIMAL(20,10)), 0),
+			COALESCE(CAST((JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_used'))) AS DECIMAL(20,10)), 0),
+			COALESCE(CAST((JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_limit'))) AS DECIMAL(20,10)), 0),
+			COALESCE(CAST((JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_used'))) AS DECIMAL(20,10)), 0),
+			COALESCE(CAST((JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_limit'))) AS DECIMAL(20,10)), 0)
 		FROM accounts
 		WHERE id = ? AND deleted_at IS NULL`,
 		accountID)

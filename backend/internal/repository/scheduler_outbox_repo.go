@@ -106,7 +106,7 @@ func enqueueSchedulerOutbox(ctx context.Context, exec sqlExecutor, eventType str
 				WHERE event_type = ?
 					AND account_id <=> ?
 					AND group_id <=> ?
-					AND created_at >= NOW() - INTERVAL ? SECOND
+					AND created_at >= NOW(6) - INTERVAL ? SECOND
 			)
 		`
 		args = append(args, eventType, accountID, groupID, schedulerOutboxDedupWindow.Seconds())

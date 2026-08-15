@@ -72,7 +72,7 @@ func TestAffiliateRepository_TransferQuotaToBalance_UsesClaimedQuotaBeforeClear(
 	affCode := fmt.Sprintf("AFF%09d", time.Now().UnixNano()%1_000_000_000)
 	_, err := client.ExecContext(txCtx, `
 INSERT INTO user_affiliates (user_id, aff_code, aff_quota, aff_history_quota, created_at, updated_at)
-VALUES (?, ?, ?, ?, NOW(), NOW())`, u.ID, affCode, 12.34)
+VALUES (?, ?, ?, ?, NOW(), NOW())`, u.ID, affCode, 12.34, 12.34)
 	require.NoError(t, err)
 
 	transferred, balance, err := repo.TransferQuotaToBalance(txCtx, u.ID)
@@ -81,11 +81,11 @@ VALUES (?, ?, ?, ?, NOW(), NOW())`, u.ID, affCode, 12.34)
 	require.InDelta(t, 17.84, balance, 1e-9)
 
 	affQuota := querySingleFloat(t, txCtx, client,
-		"SELECT aff_quota::double precision FROM user_affiliates WHERE user_id = ?", u.ID)
+		"SELECT CAST(aff_quota AS DOUBLE) FROM user_affiliates WHERE user_id = ?", u.ID)
 	require.InDelta(t, 0.0, affQuota, 1e-9)
 
 	persistedBalance := querySingleFloat(t, txCtx, client,
-		"SELECT balance::double precision FROM users WHERE id = ?", u.ID)
+		"SELECT CAST(balance AS DOUBLE) FROM users WHERE id = ?", u.ID)
 	require.InDelta(t, 17.84, persistedBalance, 1e-9)
 
 	ledgerCount := querySingleInt(t, txCtx, client,
@@ -144,7 +144,7 @@ func TestAffiliateRepository_AccrueQuota_ReusesOuterTransaction(t *testing.T) {
 
 	// Visible inside the outer tx.
 	innerQuota := querySingleFloat(t, txCtx, client,
-		"SELECT aff_quota::double precision FROM user_affiliates WHERE user_id = ?", inviter.ID)
+		"SELECT CAST(aff_quota AS DOUBLE) FROM user_affiliates WHERE user_id = ?", inviter.ID)
 	require.InDelta(t, 3.5, innerQuota, 1e-9)
 
 	// Roll back the outer tx; if AccrueQuota had opened its own inner tx and
@@ -192,7 +192,7 @@ VALUES (?, ?, 0, 0, NOW(), NOW())`, u.ID, affCode)
 	require.InDelta(t, 0.0, balance, 1e-9)
 
 	persistedBalance := querySingleFloat(t, txCtx, client,
-		"SELECT balance::double precision FROM users WHERE id = ?", u.ID)
+		"SELECT CAST(balance AS DOUBLE) FROM users WHERE id = ?", u.ID)
 	require.InDelta(t, 3.21, persistedBalance, 1e-9)
 }
 
@@ -462,15 +462,19 @@ func TestAffiliateRepository_AdminExtendInviteRewards_OnlyActiveNonPermanent(t *
 UPDATE user_affiliates
 SET inviter_id = ?,
     inviter_bound_at = NOW(),
-    invite_reward_expires_at = CASE user_id
-        WHEN ? THEN ?
-        WHEN ? THEN ?
-        WHEN ? THEN NULL
+    invite_reward_expires_at = CASE
+        WHEN user_id = ? THEN ?
+        WHEN user_id = ? THEN ?
+        WHEN user_id = ? THEN NULL
         ELSE invite_reward_expires_at
     END,
     updated_at = NOW()
 WHERE user_id IN (?, ?, ?)`,
-		inviter.ID, activeInvitee.ID, expiredInvitee.ID, permanentInvitee.ID, activeExpiresAt, expiredExpiresAt)
+		inviter.ID,
+		activeInvitee.ID, activeExpiresAt,
+		expiredInvitee.ID, expiredExpiresAt,
+		permanentInvitee.ID,
+		activeInvitee.ID, expiredInvitee.ID, permanentInvitee.ID)
 	require.NoError(t, err)
 
 	result, err := repo.AdminExtendInviteRewards(txCtx, service.AffiliateInviteRewardExtensionRequest{

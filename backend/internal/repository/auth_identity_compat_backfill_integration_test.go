@@ -70,7 +70,7 @@ WHERE report_type = 'oidc_synthetic_email_requires_manual_recovery'
 	require.NoError(t, tx.QueryRowContext(ctx, `
 SELECT character_maximum_length
 FROM information_schema.columns
-WHERE table_schema = 'public'
+WHERE table_schema = DATABASE()
   AND table_name = 'auth_identity_migration_reports'
   AND column_name = 'report_type'
 `).Scan(&reportTypeLimit))

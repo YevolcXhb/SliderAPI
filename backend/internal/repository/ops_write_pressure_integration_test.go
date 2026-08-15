@@ -13,7 +13,7 @@ import (
 
 func TestOpsRepositoryBatchInsertErrorLogs(t *testing.T) {
 	ctx := context.Background()
-	_, _ = integrationDB.ExecContext(ctx, "TRUNCATE ops_error_logs RESTART IDENTITY")
+	_, _ = integrationDB.ExecContext(ctx, "TRUNCATE TABLE ops_error_logs")
 
 	repo := NewOpsRepository(integrationDB).(*opsRepository)
 	now := time.Now().UTC()
@@ -47,7 +47,7 @@ func TestOpsRepositoryBatchInsertErrorLogs(t *testing.T) {
 
 func TestEnqueueSchedulerOutbox_DeduplicatesIdempotentEvents(t *testing.T) {
 	ctx := context.Background()
-	_, _ = integrationDB.ExecContext(ctx, "TRUNCATE scheduler_outbox RESTART IDENTITY")
+	_, _ = integrationDB.ExecContext(ctx, "TRUNCATE TABLE scheduler_outbox")
 
 	accountID := int64(12345)
 	require.NoError(t, enqueueSchedulerOutbox(ctx, integrationDB, service.SchedulerOutboxEventAccountChanged, &accountID, nil, nil))
@@ -65,7 +65,7 @@ func TestEnqueueSchedulerOutbox_DeduplicatesIdempotentEvents(t *testing.T) {
 
 func TestEnqueueSchedulerOutbox_DoesNotDeduplicateLastUsed(t *testing.T) {
 	ctx := context.Background()
-	_, _ = integrationDB.ExecContext(ctx, "TRUNCATE scheduler_outbox RESTART IDENTITY")
+	_, _ = integrationDB.ExecContext(ctx, "TRUNCATE TABLE scheduler_outbox")
 
 	accountID := int64(67890)
 	payload1 := map[string]any{"last_used": map[string]int64{"67890": 100}}

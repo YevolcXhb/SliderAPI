@@ -585,17 +585,17 @@ func (r *apiKeyRepository) IncrementQuotaUsedAndGetState(ctx context.Context, id
 	query := `
 		UPDATE api_keys
 		SET
-			quota_used = quota_used + ?,
 			status = CASE
-				WHEN quota > 0 AND quota_used + ? >= quota THEN ?
+				WHEN quota > 0 AND status = ? AND quota_used + ? >= quota THEN ?
 				ELSE status
 			END,
+			quota_used = quota_used + ?,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL
 	`
 
 	state := &service.APIKeyQuotaUsageState{}
-	if _, err := r.sql.ExecContext(ctx, query, amount, service.StatusAPIKeyQuotaExhausted, id); err != nil {
+	if _, err := r.sql.ExecContext(ctx, query, service.StatusAPIKeyActive, amount, service.StatusAPIKeyQuotaExhausted, amount, id); err != nil {
 		return nil, err
 	}
 	if err := scanSingleRow(ctx, r.sql, `

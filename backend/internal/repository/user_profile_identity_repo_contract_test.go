@@ -33,14 +33,12 @@ func (s *UserProfileIdentityRepoSuite) SetupTest() {
 	s.repo = newUserRepositoryWithSQL(s.client, integrationDB)
 
 	_, err := integrationDB.ExecContext(s.ctx, `
-TRUNCATE TABLE
-	identity_adoption_decisions,
-	auth_identity_channels,
-	auth_identities,
-	pending_auth_sessions,
-	user_provider_default_grants,
-	user_avatars
-RESTART IDENTITY`)
+DELETE FROM identity_adoption_decisions;
+DELETE FROM auth_identity_channels;
+DELETE FROM auth_identities;
+DELETE FROM pending_auth_sessions;
+DELETE FROM user_provider_default_grants;
+DELETE FROM user_avatars;`)
 	s.Require().NoError(err)
 }
 

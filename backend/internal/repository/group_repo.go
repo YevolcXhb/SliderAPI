@@ -592,12 +592,12 @@ func (r *groupRepository) GetAccountCount(ctx context.Context, groupID int64) (t
 	var rateLimited int64
 	err = scanSingleRow(ctx, r.sql,
 		`SELECT COUNT(*),
-			SUM(CASE WHEN a.status = 'active' AND a.schedulable = true THEN 1 ELSE 0 END),
-			SUM(CASE WHEN a.status = 'active' AND (
+			COALESCE(SUM(CASE WHEN a.status = 'active' AND a.schedulable = true THEN 1 ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN a.status = 'active' AND (
 				a.rate_limit_reset_at > NOW() OR
 				a.overload_until > NOW() OR
 				a.temp_unschedulable_until > NOW()
-			) THEN 1 ELSE 0 END)
+			) THEN 1 ELSE 0 END), 0)
 		FROM account_groups ag JOIN accounts a ON a.id = ag.account_id
 		WHERE ag.group_id = ?`,
 		[]any{groupID}, &total, &active, &rateLimited)

@@ -54,6 +54,44 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
+	// External mode: INTEGRATION_DB_DSN points at an already-running MariaDB
+	// (for example a developer's LAN database) so the suite can run without
+	// Docker. Redis is optional via INTEGRATION_REDIS_ADDR; when it is missing,
+	// redis-dependent integration tests will fail with connection errors.
+	if externalDSN := os.Getenv("INTEGRATION_DB_DSN"); externalDSN != "" {
+		var err error
+		integrationDB, err = openSQLWithRetry(ctx, externalDSN, 30*time.Second)
+		if err != nil {
+			log.Printf("failed to open external sql db: %v", err)
+			os.Exit(1)
+		}
+		if err := ApplyMigrations(ctx, integrationDB); err != nil {
+			log.Printf("failed to apply db migrations: %v", err)
+			os.Exit(1)
+		}
+		drv := entsql.OpenDB(dialect.MySQL, integrationDB)
+		integrationEntClient = dbent.NewClient(dbent.Driver(drv))
+		if redisAddr := os.Getenv("INTEGRATION_REDIS_ADDR"); redisAddr != "" {
+			integrationRedis = redisclient.NewClient(&redisclient.Options{Addr: redisAddr})
+			if err := integrationRedis.Ping(ctx).Err(); err != nil {
+				log.Printf("failed to ping external redis: %v", err)
+				os.Exit(1)
+			}
+		}
+		code := m.Run()
+		if integrationEntClient != nil {
+			_ = integrationEntClient.Close()
+		}
+		if integrationRedis != nil {
+			_ = integrationRedis.Close()
+		}
+		if integrationDB != nil {
+			_ = integrationDB.Close()
+		}
+		os.Exit(code)
+		return
+	}
+
 	if !dockerIsAvailable(ctx) {
 		// In CI we expect Docker to be available so integration tests should fail loudly.
 		if os.Getenv("CI") != "" {

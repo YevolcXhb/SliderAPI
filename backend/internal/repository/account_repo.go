@@ -1534,7 +1534,7 @@ func (r *accountRepository) SetTempUnschedulable(ctx context.Context, id int64, 
 		WHERE id = ?
 			AND deleted_at IS NULL
 			AND (temp_unschedulable_until IS NULL OR temp_unschedulable_until < ?)
-	`, until, reason, id)
+	`, until, reason, id, until)
 	if err != nil {
 		return err
 	}
@@ -2385,8 +2385,8 @@ const nowUTC = `DATE_FORMAT(NOW(), '%Y-%m-%dT%H:%i:%s.%fZ')`
 // Supports both rolling (24h from start) and fixed (pre-computed reset_at) modes.
 const dailyExpiredExpr = `(
 	CASE WHEN COALESCE(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_reset_mode')), 'rolling') = 'fixed'
-	THEN NOW() >= COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_reset_at')) AS DATETIME), '1970-01-01')
-	ELSE COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_start')) AS DATETIME), '1970-01-01')
+	THEN NOW() >= COALESCE(CAST(LEFT(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_reset_at')), 23) AS DATETIME), '1970-01-01')
+	ELSE COALESCE(CAST(LEFT(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_start')), 23) AS DATETIME), '1970-01-01')
 		+ INTERVAL 24 HOUR <= NOW()
 	END
 )`
@@ -2394,8 +2394,8 @@ const dailyExpiredExpr = `(
 // weeklyExpiredExpr is a SQL expression that evaluates to TRUE when weekly quota period has expired.
 const weeklyExpiredExpr = `(
 	CASE WHEN COALESCE(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_reset_mode')), 'rolling') = 'fixed'
-	THEN NOW() >= COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_reset_at')) AS DATETIME), '1970-01-01')
-	ELSE COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_start')) AS DATETIME), '1970-01-01')
+	THEN NOW() >= COALESCE(CAST(LEFT(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_reset_at')), 23) AS DATETIME), '1970-01-01')
+	ELSE COALESCE(CAST(LEFT(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_start')), 23) AS DATETIME), '1970-01-01')
 		+ INTERVAL 168 HOUR <= NOW()
 	END
 )`
@@ -2483,15 +2483,15 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 		`UPDATE accounts SET extra = JSON_MERGE_PATCH(
 			JSON_MERGE_PATCH(
 				COALESCE(extra, '{}'),
-				JSON_OBJECT('quota_used', COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_used')) AS DECIMAL), 0) + ?)
+				JSON_OBJECT('quota_used', COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_used')) AS DECIMAL(20,10)), 0) + ?)
 			),
 			JSON_MERGE_PATCH(
-				CASE WHEN COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_limit')) AS DECIMAL), 0) > 0 THEN
+				CASE WHEN COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_limit')) AS DECIMAL(20,10)), 0) > 0 THEN
 					JSON_MERGE_PATCH(
 						JSON_OBJECT(
 							'quota_daily_used',
 							CASE WHEN `+dailyExpiredExpr+` THEN ?
-							ELSE COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_used')) AS DECIMAL), 0) + ? END,
+							ELSE COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_used')) AS DECIMAL(20,10)), 0) + ? END,
 							'quota_daily_start',
 							CASE WHEN `+dailyExpiredExpr+` THEN `+nowUTC+`
 							ELSE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_start')), `+nowUTC+`) END
@@ -2501,12 +2501,12 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 						   ELSE '{}' END
 					)
 				ELSE '{}' END,
-				CASE WHEN COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_limit')) AS DECIMAL), 0) > 0 THEN
+				CASE WHEN COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_limit')) AS DECIMAL(20,10)), 0) > 0 THEN
 					JSON_MERGE_PATCH(
 						JSON_OBJECT(
 							'quota_weekly_used',
 							CASE WHEN `+weeklyExpiredExpr+` THEN ?
-							ELSE COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_used')) AS DECIMAL), 0) + ? END,
+							ELSE COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_used')) AS DECIMAL(20,10)), 0) + ? END,
 							'quota_weekly_start',
 							CASE WHEN `+weeklyExpiredExpr+` THEN `+nowUTC+`
 							ELSE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_start')), `+nowUTC+`) END
@@ -2526,8 +2526,8 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 	var newUsed, limit float64
 	err := scanSingleRow(ctx, r.sql,
 		`SELECT
-			COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_used')) AS DECIMAL), 0),
-			COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_limit')) AS DECIMAL), 0)
+			COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_used')) AS DECIMAL(20,10)), 0),
+			COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_limit')) AS DECIMAL(20,10)), 0)
 		FROM accounts
 		WHERE id = ? AND deleted_at IS NULL`,
 		[]any{id}, &newUsed, &limit)
