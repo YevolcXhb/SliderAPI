@@ -51,6 +51,6 @@ WHERE po.order_type = 'balance'
   AND NOT EXISTS (
       SELECT 1
       FROM payment_audit_logs pal
-      WHERE pal.order_id = CAST(po.id AS CHAR)
+      WHERE pal.order_id = CAST(po.id AS CHAR) COLLATE utf8mb4_unicode_ci
         AND pal.action IN ('AFFILIATE_REBATE_APPLIED', 'AFFILIATE_REBATE_SKIPPED')
   );
