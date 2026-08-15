@@ -8605,13 +8605,13 @@ func postUsageBilling(ctx context.Context, p *postUsageBillingParams, deps *bill
 
 	if p.shouldDeductAPIKeyQuota() {
 		if err := p.APIKeyService.UpdateQuotaUsed(billingCtx, p.APIKey.ID, cost.ActualCost); err != nil {
-			slog.Error("update api `key` quota failed", "api_key_id", p.APIKey.ID, "error", err)
+			slog.Error("update api key quota failed", "api_key_id", p.APIKey.ID, "error", err)
 		}
 	}
 
 	if p.shouldUpdateRateLimits() {
 		if err := p.APIKeyService.UpdateRateLimitUsage(billingCtx, p.APIKey.ID, cost.ActualCost); err != nil {
-			slog.Error("update api `key` rate limit usage failed", "api_key_id", p.APIKey.ID, "error", err)
+			slog.Error("update api key rate limit usage failed", "api_key_id", p.APIKey.ID, "error", err)
 		}
 	}
 

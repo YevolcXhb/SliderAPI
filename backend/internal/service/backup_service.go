@@ -98,7 +98,7 @@ type UsageRetentionConfig struct {
 type BackupRecord struct {
 	ID            string `json:"id"`
 	Status        string `json:"status"`      // pending, running, completed, failed
-	BackupType    string `json:"backup_type"` // postgres
+	BackupType    string `json:"backup_type"` // mysql
 	FileName      string `json:"file_name"`
 	S3Key         string `json:"s3_key"`
 	SizeBytes     int64  `json:"size_bytes"`
@@ -581,7 +581,7 @@ func (s *BackupService) CreateBackup(ctx context.Context, triggeredBy string, ex
 	record := &BackupRecord{
 		ID:          backupID,
 		Status:      "running",
-		BackupType:  "postgres",
+		BackupType:  "mysql",
 		FileName:    fileName,
 		S3Key:       s3Key,
 		TriggeredBy: triggeredBy,
@@ -809,7 +809,7 @@ func (s *BackupService) StartBackup(ctx context.Context, triggeredBy string, exp
 	record := &BackupRecord{
 		ID:          backupID,
 		Status:      "running",
-		BackupType:  "postgres",
+		BackupType:  "mysql",
 		FileName:    fileName,
 		S3Key:       s3Key,
 		TriggeredBy: triggeredBy,

@@ -2300,7 +2300,7 @@ func (s *adminServiceImpl) AdminUpdateAPIKeyGroupID(ctx context.Context, keyID i
 				return nil, fmt.Errorf("add group to user allowed groups: %w", addErr)
 			}
 			if err := s.apiKeyRepo.Update(opCtx, apiKey); err != nil {
-				return nil, fmt.Errorf("update api `key`: %w", err)
+				return nil, fmt.Errorf("update api key: %w", err)
 			}
 			if tx != nil {
 				if err := tx.Commit(); err != nil {
@@ -2324,7 +2324,7 @@ func (s *adminServiceImpl) AdminUpdateAPIKeyGroupID(ctx context.Context, keyID i
 
 	// 非专属分组 / 解绑：无需事务，单步更新即可
 	if err := s.apiKeyRepo.Update(ctx, apiKey); err != nil {
-		return nil, fmt.Errorf("update api `key`: %w", err)
+		return nil, fmt.Errorf("update api key: %w", err)
 	}
 
 	// 失效认证缓存

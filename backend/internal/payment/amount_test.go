@@ -51,7 +51,7 @@ func TestYuanToFen(t *testing.T) {
 		{name: "alphabetic", input: "abc", wantErr: true},
 		{name: "double dot", input: "1.2.3", wantErr: true},
 		{name: "spaces", input: "  ", wantErr: true},
-		{name: "special chars", input: "?.00", wantErr: true},
+		{name: "special chars", input: "$1.00", wantErr: true},
 	}
 
 	for _, tt := range tests {

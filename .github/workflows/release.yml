@@ -122,13 +122,13 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version-file: backend/go.mod
+          go-version: '1.26.6'
           check-latest: false
           cache-dependency-path: backend/go.sum
 
       - name: Verify Go version
         run: |
-          go version | grep -q 'go1.26.5'
+          go version | grep -q 'go1.26.6'
 
       # Docker setup for GoReleaser
       - name: Set up QEMU

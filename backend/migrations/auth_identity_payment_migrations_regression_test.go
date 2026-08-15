@@ -33,7 +33,7 @@ func TestAuthIdentityReportTypeWideningRunsBeforeLongReportWritersAndStillReconc
 
 	preflightSQL := string(preflightContent)
 	require.Contains(t, preflightSQL, "ALTER TABLE auth_identity_migration_reports")
-	require.Contains(t, preflightSQL, "ALTER COLUMN report_type TYPE VARCHAR(80)")
+	require.Contains(t, preflightSQL, "MODIFY COLUMN report_type VARCHAR(80) NOT NULL")
 
 	content, err := FS.ReadFile("109_auth_identity_compat_backfill.sql")
 	require.NoError(t, err)
@@ -46,7 +46,7 @@ func TestAuthIdentityReportTypeWideningRunsBeforeLongReportWritersAndStillReconc
 
 	followupSQL := string(followupContent)
 	require.Contains(t, followupSQL, "ALTER TABLE auth_identity_migration_reports")
-	require.Contains(t, followupSQL, "ALTER COLUMN report_type TYPE VARCHAR(80)")
+	require.Contains(t, followupSQL, "MODIFY COLUMN report_type VARCHAR(80) NOT NULL")
 }
 
 func TestMigration119DefersPaymentIndexRolloutToOnlineFollowup(t *testing.T) {
@@ -55,7 +55,7 @@ func TestMigration119DefersPaymentIndexRolloutToOnlineFollowup(t *testing.T) {
 
 	sql := string(content)
 	require.Contains(t, sql, "120_enforce_payment_orders_out_trade_no_unique_notx.sql")
-	require.Contains(t, sql, "NULL;")
+	require.Contains(t, sql, "no-op")
 	require.NotContains(t, sql, "CREATE UNIQUE INDEX")
 	require.NotContains(t, sql, "DROP INDEX")
 
@@ -63,19 +63,17 @@ func TestMigration119DefersPaymentIndexRolloutToOnlineFollowup(t *testing.T) {
 	require.NoError(t, err)
 
 	followupSQL := string(followupContent)
-	require.Contains(t, followupSQL, "explicit duplicate out_trade_no precheck")
-	require.Contains(t, followupSQL, "stale invalid paymentorder_out_trade_no_unique index")
-	require.Contains(t, followupSQL, "CREATE UNIQUE INDEX  IF NOT EXISTS paymentorder_out_trade_no_unique")
-	require.NotContains(t, followupSQL, "DROP INDEX  IF EXISTS paymentorder_out_trade_no_unique")
-	require.Contains(t, followupSQL, "DROP INDEX  IF EXISTS paymentorder_out_trade_no")
-	require.Contains(t, followupSQL, "WHERE out_trade_no <> ''")
+	require.Contains(t, followupSQL, "out_trade_no_unique_key VARCHAR(255)")
+	require.Contains(t, followupSQL, "CASE WHEN out_trade_no <> '' THEN out_trade_no ELSE NULL END")
+	require.Contains(t, followupSQL, "CREATE UNIQUE INDEX IF NOT EXISTS paymentorder_out_trade_no_unique")
+	require.Contains(t, followupSQL, "DROP INDEX IF EXISTS paymentorder_out_trade_no ON payment_orders")
 
 	alignmentContent, err := FS.ReadFile("120a_align_payment_orders_out_trade_no_index_name.sql")
 	require.NoError(t, err)
 
 	alignmentSQL := string(alignmentContent)
 	require.Contains(t, alignmentSQL, "paymentorder_out_trade_no_unique")
-	require.Contains(t, alignmentSQL, "RENAME TO paymentorder_out_trade_no")
+	require.Contains(t, alignmentSQL, "RENAME INDEX paymentorder_out_trade_no_unique TO paymentorder_out_trade_no")
 }
 
 func TestMigration140CreatesOwnedAccountIdentityIndexesOnline(t *testing.T) {
@@ -83,13 +81,14 @@ func TestMigration140CreatesOwnedAccountIdentityIndexesOnline(t *testing.T) {
 	require.NoError(t, err)
 
 	sql := string(content)
-	require.Contains(t, sql, "CREATE UNIQUE INDEX  IF NOT EXISTS idx_accounts_owned_openai_chatgpt_account_id_uniq")
-	require.Contains(t, sql, "CREATE UNIQUE INDEX  IF NOT EXISTS idx_accounts_owned_openai_chatgpt_user_id_uniq")
-	require.Contains(t, sql, "CREATE UNIQUE INDEX  IF NOT EXISTS idx_accounts_owned_anthropic_org_account_uniq")
-	require.Contains(t, sql, "CREATE UNIQUE INDEX  IF NOT EXISTS idx_accounts_owned_gemini_project_uniq")
-	require.Contains(t, sql, "CREATE UNIQUE INDEX  IF NOT EXISTS idx_accounts_owned_antigravity_project_uniq")
-	require.Contains(t, sql, "owner_user_id IS NOT NULL")
-	require.Contains(t, sql, "deleted_at IS NULL")
+	require.Contains(t, sql, "ADD COLUMN IF NOT EXISTS owned_openai_chatgpt_account_id_key VARCHAR(255)")
+	require.Contains(t, sql, "CREATE INDEX IF NOT EXISTS idx_accounts_owned_openai_chatgpt_account_id_uniq")
+	require.Contains(t, sql, "CREATE INDEX IF NOT EXISTS idx_accounts_owned_openai_chatgpt_user_id_uniq")
+	require.Contains(t, sql, "CREATE INDEX IF NOT EXISTS idx_accounts_owned_anthropic_org_account_uniq")
+	require.Contains(t, sql, "CREATE INDEX IF NOT EXISTS idx_accounts_owned_gemini_project_uniq")
+	require.Contains(t, sql, "CREATE INDEX IF NOT EXISTS idx_accounts_owned_antigravity_project_uniq")
+	require.Contains(t, sql, "ON accounts (owner_user_id, owned_openai_chatgpt_account_id_key)")
+	require.NotContains(t, sql, "CREATE UNIQUE INDEX")
 	require.NotContains(t, strings.ToUpper(sql), "BEGIN")
 	require.NotContains(t, strings.ToUpper(sql), "COMMIT")
 }

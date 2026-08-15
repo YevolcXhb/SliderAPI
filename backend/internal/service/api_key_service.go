@@ -813,7 +813,7 @@ func (s *APIKeyService) Update(ctx context.Context, id int64, userID int64, req 
 	}
 
 	if err := s.apiKeyRepo.Update(ctx, apiKey); err != nil {
-		return nil, fmt.Errorf("update api `key`: %w", err)
+		return nil, fmt.Errorf("update api key: %w", err)
 	}
 
 	s.InvalidateAuthCacheByKey(ctx, apiKey.Key)
@@ -846,7 +846,7 @@ func (s *APIKeyService) Delete(ctx context.Context, id int64, userID int64) erro
 	s.InvalidateAuthCacheByKey(ctx, key)
 
 	if err := s.apiKeyRepo.Delete(ctx, id); err != nil {
-		return fmt.Errorf("delete api `key`: %w", err)
+		return fmt.Errorf("delete api key: %w", err)
 	}
 	s.lastUsedTouchL1.Delete(id)
 

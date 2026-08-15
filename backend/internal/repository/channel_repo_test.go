@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"ikik-api/internal/pkg/pagination"
-	"github.com/lib/pq"
+	"github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
 )
 
@@ -186,25 +186,25 @@ func TestIsUniqueViolation(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "unique violation code 23505",
-			err:  &pq.Error{Code: "23505"},
+			name: "unique violation code 1062",
+			err:  &mysql.MySQLError{Number: 1062},
 			want: true,
 		},
 		{
-			name: "different pq error code",
-			err:  &pq.Error{Code: "23503"},
+			name: "different mysql error code",
+			err:  &mysql.MySQLError{Number: 1451},
 			want: false,
 		},
 		{
-			name: "non-pq error",
+			name: "non-mysql error",
 			err:  errors.New("some generic error"),
 			want: false,
 		},
 		{
-			name: "typed nil pq.Error",
+			name: "typed nil mysql error",
 			err: func() error {
-				var pqErr *pq.Error
-				return pqErr
+				var mysqlErr *mysql.MySQLError
+				return mysqlErr
 			}(),
 			want: false,
 		},
@@ -214,8 +214,8 @@ func TestIsUniqueViolation(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "wrapped pq error with 23505",
-			err:  fmt.Errorf("wrapped: %w", &pq.Error{Code: "23505"}),
+			name: "wrapped mysql error with 1062",
+			err:  fmt.Errorf("wrapped: %w", &mysql.MySQLError{Number: 1062}),
 			want: true,
 		},
 	}

@@ -21,8 +21,8 @@ func TestBuildBalanceLowEmailBody_ContainsRequiredFields(t *testing.T) {
 	// All substituted values should appear in the output.
 	require.Contains(t, body, "MySite")
 	require.Contains(t, body, "Alice")
-	require.Contains(t, body, "?.14")
-	require.Contains(t, body, "?.00")
+	require.Contains(t, body, "$3.14")
+	require.Contains(t, body, "$10.00")
 
 	// No fmt.Sprintf format error markers.
 	require.NotContains(t, body, "%!")
@@ -71,7 +71,7 @@ func TestBuildQuotaAlertEmailBody_AllFieldsPresent(t *testing.T) {
 		750.50,        // used
 		1000.0,        // limit
 		249.50,        // remaining
-		"?.50",     // thresholdDisplay
+		"$100.50",  // thresholdDisplay
 		"MySite",      // siteName
 	)
 
@@ -80,9 +80,9 @@ func TestBuildQuotaAlertEmailBody_AllFieldsPresent(t *testing.T) {
 	require.Contains(t, body, "acc-foo")
 	require.Contains(t, body, "anthropic")
 	require.Contains(t, body, "Daily")
-	require.Contains(t, body, "?.50")
-	require.Contains(t, body, "?.00")
-	require.Contains(t, body, "?.50")
+	require.Contains(t, body, "$750.50")
+	require.Contains(t, body, "$1000.00")
+	require.Contains(t, body, "$249.50")
 
 	// No format error markers.
 	require.NotContains(t, body, "%!")
@@ -120,9 +120,9 @@ func TestBuildQuotaAlertEmailBody_RemainingClampedAtZero(t *testing.T) {
 	body := s.buildQuotaAlertEmailBody(
 		1, "n", "p", "dim",
 		1500.0, 1000.0, 0.0, // used > limit (over-quota)
-		"?.00", "Site",
+		"$10.00", "Site",
 	)
-	require.Contains(t, body, "?.00")
+	require.Contains(t, body, "$10.00")
 }
 
 // ---------- sanity checks on CSS/template formatting ----------
@@ -136,7 +136,7 @@ func TestBuildBalanceLowEmailBody_NoCSSFormatError(t *testing.T) {
 
 func TestBuildQuotaAlertEmailBody_NoCSSFormatError(t *testing.T) {
 	s := &BalanceNotifyService{}
-	body := s.buildQuotaAlertEmailBody(1, "n", "p", "d", 0, 0, 0, "?.00", "Site")
+	body := s.buildQuotaAlertEmailBody(1, "n", "p", "d", 0, 0, 0, "$10.00", "Site")
 	require.NotContains(t, body, "%!", "template formatting error rendered into email body")
 	require.Contains(t, body, "body {", "CSS block should render")
 }
