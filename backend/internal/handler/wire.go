@@ -1,0 +1,257 @@
+package handler
+
+import (
+	"ikik-api/internal/handler/admin"
+	"ikik-api/internal/service"
+
+	"github.com/google/wire"
+)
+
+// ProvideAdminHandlers creates the AdminHandlers struct
+func ProvideAdminHandlers(
+	dashboardHandler *admin.DashboardHandler,
+	userHandler *admin.UserHandler,
+	groupHandler *admin.GroupHandler,
+	accountHandler *admin.AccountHandler,
+	accountSharePolicyHandler *admin.AccountSharePolicyHandler,
+	carpoolHandler *admin.CarpoolHandler,
+	announcementHandler *admin.AnnouncementHandler,
+	emailBroadcastHandler *admin.EmailBroadcastHandler,
+	dataManagementHandler *admin.DataManagementHandler,
+	backupHandler *admin.BackupHandler,
+	oauthHandler *admin.OAuthHandler,
+	openaiOAuthHandler *admin.OpenAIOAuthHandler,
+	geminiOAuthHandler *admin.GeminiOAuthHandler,
+	antigravityOAuthHandler *admin.AntigravityOAuthHandler,
+	grokOAuthHandler *admin.GrokOAuthHandler,
+	kiroOAuthHandler *admin.KiroOAuthHandler,
+	proxyHandler *admin.ProxyHandler,
+	redeemHandler *admin.RedeemHandler,
+	promoHandler *admin.PromoHandler,
+	settingHandler *admin.SettingHandler,
+	opsHandler *admin.OpsHandler,
+	systemHandler *admin.SystemHandler,
+	subscriptionHandler *admin.SubscriptionHandler,
+	usageHandler *admin.UsageHandler,
+	userAttributeHandler *admin.UserAttributeHandler,
+	errorPassthroughHandler *admin.ErrorPassthroughHandler,
+	tlsFingerprintProfileHandler *admin.TLSFingerprintProfileHandler,
+	apiKeyHandler *admin.AdminAPIKeyHandler,
+	scheduledTestHandler *admin.ScheduledTestHandler,
+	channelHandler *admin.ChannelHandler,
+	channelMonitorHandler *admin.ChannelMonitorHandler,
+	channelMonitorTemplateHandler *admin.ChannelMonitorRequestTemplateHandler,
+	contentModerationHandler *admin.ContentModerationHandler,
+	paymentHandler *admin.PaymentHandler,
+	revenueHandler *admin.RevenueHandler,
+	withdrawalHandler *admin.WithdrawalHandler,
+	shopHandler *admin.ShopHandler,
+	affiliateHandler *admin.AffiliateHandler,
+	moduleHandler *admin.ModuleHandler,
+) *AdminHandlers {
+	return &AdminHandlers{
+		Dashboard:              dashboardHandler,
+		User:                   userHandler,
+		Group:                  groupHandler,
+		Account:                accountHandler,
+		AccountSharePolicy:     accountSharePolicyHandler,
+		Carpool:                carpoolHandler,
+		Announcement:           announcementHandler,
+		EmailBroadcast:         emailBroadcastHandler,
+		DataManagement:         dataManagementHandler,
+		Backup:                 backupHandler,
+		OAuth:                  oauthHandler,
+		OpenAIOAuth:            openaiOAuthHandler,
+		GeminiOAuth:            geminiOAuthHandler,
+		AntigravityOAuth:       antigravityOAuthHandler,
+		GrokOAuth:              grokOAuthHandler,
+		KiroOAuth:              kiroOAuthHandler,
+		Proxy:                  proxyHandler,
+		Redeem:                 redeemHandler,
+		Promo:                  promoHandler,
+		Setting:                settingHandler,
+		Ops:                    opsHandler,
+		System:                 systemHandler,
+		Subscription:           subscriptionHandler,
+		Usage:                  usageHandler,
+		UserAttribute:          userAttributeHandler,
+		ErrorPassthrough:       errorPassthroughHandler,
+		TLSFingerprintProfile:  tlsFingerprintProfileHandler,
+		APIKey:                 apiKeyHandler,
+		ScheduledTest:          scheduledTestHandler,
+		Channel:                channelHandler,
+		ChannelMonitor:         channelMonitorHandler,
+		ChannelMonitorTemplate: channelMonitorTemplateHandler,
+		ContentModeration:      contentModerationHandler,
+		Payment:                paymentHandler,
+		Revenue:                revenueHandler,
+		Withdrawal:             withdrawalHandler,
+		Shop:                   shopHandler,
+		Affiliate:              affiliateHandler,
+		Module:                 moduleHandler,
+	}
+}
+
+// ProvideSystemHandler creates admin.SystemHandler with UpdateService
+func ProvideSystemHandler(updateService *service.UpdateService, lockService *service.SystemOperationLockService) *admin.SystemHandler {
+	return admin.NewSystemHandler(updateService, lockService)
+}
+
+// ProvideSettingHandler creates SettingHandler with version from BuildInfo
+func ProvideSettingHandler(settingService *service.SettingService, buildInfo BuildInfo) *SettingHandler {
+	return NewSettingHandler(settingService, buildInfo.Version)
+}
+
+func ProvideUserAccountHandler(
+	accountService *service.AccountService,
+	accountUsageService *service.AccountUsageService,
+	accountTestService *service.AccountTestService,
+	oauthService *service.OAuthService,
+	openaiOAuthService *service.OpenAIOAuthService,
+	geminiOAuthService *service.GeminiOAuthService,
+	antigravityOAuthService *service.AntigravityOAuthService,
+	grokOAuthService *service.GrokOAuthService,
+	kiroOAuthService *service.KiroOAuthService,
+	accountBatchTaskService *service.AccountBatchTaskService,
+	carpoolService *service.CarpoolService,
+	settingService *service.SettingService,
+) *UserAccountHandler {
+	h := NewUserAccountHandler(
+		accountService,
+		accountUsageService,
+		accountTestService,
+		oauthService,
+		openaiOAuthService,
+		geminiOAuthService,
+		antigravityOAuthService,
+		accountBatchTaskService,
+	)
+	h.SetCarpoolService(carpoolService)
+	h.SetSettingService(settingService)
+	h.SetGrokOAuthService(grokOAuthService)
+	h.SetKiroOAuthService(kiroOAuthService)
+	return h
+}
+
+// ProvideHandlers creates the Handlers struct
+func ProvideHandlers(
+	authHandler *AuthHandler,
+	userHandler *UserHandler,
+	apiKeyHandler *APIKeyHandler,
+	userAccountHandler *UserAccountHandler,
+	usageHandler *UsageHandler,
+	redeemHandler *RedeemHandler,
+	subscriptionHandler *SubscriptionHandler,
+	announcementHandler *AnnouncementHandler,
+	channelMonitorUserHandler *ChannelMonitorUserHandler,
+	adminHandlers *AdminHandlers,
+	gatewayHandler *GatewayHandler,
+	openaiGatewayHandler *OpenAIGatewayHandler,
+	settingHandler *SettingHandler,
+	totpHandler *TotpHandler,
+	paymentHandler *PaymentHandler,
+	paymentWebhookHandler *PaymentWebhookHandler,
+	availableChannelHandler *AvailableChannelHandler,
+	playgroundHandler *PlaygroundHandler,
+	receiptCodeHandler *ReceiptCodeHandler,
+	withdrawalHandler *WithdrawalHandler,
+	shopHandler *ShopHandler,
+	_ *service.IdempotencyCoordinator,
+	_ *service.IdempotencyCleanupService,
+) *Handlers {
+	return &Handlers{
+		Auth:             authHandler,
+		User:             userHandler,
+		APIKey:           apiKeyHandler,
+		UserAccount:      userAccountHandler,
+		Usage:            usageHandler,
+		Redeem:           redeemHandler,
+		Subscription:     subscriptionHandler,
+		Announcement:     announcementHandler,
+		ChannelMonitor:   channelMonitorUserHandler,
+		Admin:            adminHandlers,
+		Gateway:          gatewayHandler,
+		OpenAIGateway:    openaiGatewayHandler,
+		Setting:          settingHandler,
+		Totp:             totpHandler,
+		Payment:          paymentHandler,
+		PaymentWebhook:   paymentWebhookHandler,
+		AvailableChannel: availableChannelHandler,
+		Playground:       playgroundHandler,
+		ReceiptCode:      receiptCodeHandler,
+		Withdrawal:       withdrawalHandler,
+		Shop:             shopHandler,
+	}
+}
+
+// ProviderSet is the Wire provider set for all handlers
+var ProviderSet = wire.NewSet(
+	// Top-level handlers
+	NewAuthHandler,
+	NewUserHandler,
+	NewAPIKeyHandler,
+	ProvideUserAccountHandler,
+	NewUsageHandler,
+	NewRedeemHandler,
+	NewSubscriptionHandler,
+	NewAnnouncementHandler,
+	NewChannelMonitorUserHandler,
+	ProvideGatewayHookChain,
+	ProvideGatewayPlatformRegistry,
+	NewGatewayHandler,
+	NewOpenAIGatewayHandler,
+	NewTotpHandler,
+	ProvideSettingHandler,
+	NewPaymentHandler,
+	NewPaymentWebhookHandler,
+	NewAvailableChannelHandler,
+	NewPlaygroundHandler,
+	NewReceiptCodeHandler,
+	NewWithdrawalHandler,
+	NewShopHandler,
+
+	// Admin handlers
+	admin.NewDashboardHandler,
+	admin.NewUserHandler,
+	admin.NewGroupHandler,
+	admin.NewAccountHandler,
+	admin.NewAccountSharePolicyHandler,
+	admin.NewCarpoolHandler,
+	admin.NewAnnouncementHandler,
+	admin.NewEmailBroadcastHandler,
+	admin.NewDataManagementHandler,
+	admin.NewBackupHandler,
+	admin.NewOAuthHandler,
+	admin.NewOpenAIOAuthHandler,
+	admin.NewGeminiOAuthHandler,
+	admin.NewAntigravityOAuthHandler,
+	admin.NewGrokOAuthHandler,
+	admin.NewKiroOAuthHandler,
+	admin.NewProxyHandler,
+	admin.NewRedeemHandler,
+	admin.NewPromoHandler,
+	admin.NewSettingHandler,
+	admin.NewOpsHandler,
+	ProvideSystemHandler,
+	admin.NewSubscriptionHandler,
+	admin.NewUsageHandler,
+	admin.NewUserAttributeHandler,
+	admin.NewErrorPassthroughHandler,
+	admin.NewTLSFingerprintProfileHandler,
+	admin.NewAdminAPIKeyHandler,
+	admin.NewScheduledTestHandler,
+	admin.NewChannelHandler,
+	admin.NewChannelMonitorHandler,
+	admin.NewChannelMonitorRequestTemplateHandler,
+	admin.NewContentModerationHandler,
+	admin.NewPaymentHandler,
+	admin.NewRevenueHandler,
+	admin.NewWithdrawalHandler,
+	admin.NewShopHandler,
+	admin.NewAffiliateHandler,
+	admin.NewModuleHandler,
+
+	// AdminHandlers and Handlers constructors
+	ProvideAdminHandlers,
+	ProvideHandlers,
+)

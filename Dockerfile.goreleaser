@@ -1,0 +1,49 @@
+# =============================================================================
+# ikik-api Dockerfile for GoReleaser
+# =============================================================================
+# This Dockerfile is used by GoReleaser to build Docker images.
+# It only packages the pre-built binary, no compilation needed.
+# =============================================================================
+
+ARG ALPINE_IMAGE=alpine:3.21
+
+FROM ${ALPINE_IMAGE}
+
+LABEL maintainer="ikik-api maintainers"
+LABEL description="ikik-api - AI API Gateway Platform"
+LABEL org.opencontainers.image.source="https://github.com/wenyi401/ikik-api"
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    ca-certificates \
+    tzdata \
+    curl \
+    su-exec \
+    mariadb-client \
+    && rm -rf /var/cache/apk/*
+
+
+# Create non-root user
+RUN addgroup -g 1000 ikik-api && \
+    adduser -u 1000 -G ikik-api -s /bin/sh -D ikik-api
+
+WORKDIR /app
+
+# Copy pre-built binary from GoReleaser
+COPY ikik-api /app/ikik-api
+
+# Create data directory
+RUN mkdir -p /app/data && chown -R ikik-api:ikik-api /app
+
+# Copy entrypoint script (fixes volume permissions then drops to ikik-api)
+COPY deploy/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:${SERVER_PORT:-8080}/health || exit 1
+
+# Run the application (entrypoint fixes /app/data ownership then execs as ikik-api)
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
+CMD ["/app/ikik-api"]

@@ -1,0 +1,2 @@
+-- MariaDB disallows CHECK constraints that reference foreign-key columns
+-- (order_id); the invariant is enforced by the application layer.
