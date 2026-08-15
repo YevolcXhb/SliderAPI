@@ -276,7 +276,7 @@ LEFT JOIN users u ON e.user_id = u.id
 LEFT JOIN users u2 ON e.resolved_by_user_id = u2.id
 ` + where + `
 ORDER BY ` + opsErrorLogsOrderBy(filter) + `
-LIMIT $` + itoa(len(args)+1) + ` OFFSET $` + itoa(len(args)+2)
+LIMIT ? OFFSET ?`
 
 	rows, err := r.db.QueryContext(ctx, selectSQL, argsWithLimit...)
 	if err != nil {
@@ -1156,7 +1156,7 @@ SELECT
 FROM ops_system_logs l
 ` + where + `
 ORDER BY l.created_at DESC, l.id DESC
-LIMIT $` + itoa(len(args)+1) + ` OFFSET $` + itoa(len(args)+2)
+LIMIT ? OFFSET ?`
 
 	rows, err := r.db.QueryContext(ctx, query, argsWithLimit...)
 	if err != nil {

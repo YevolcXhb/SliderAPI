@@ -101,7 +101,7 @@ SELECT
 FROM content_moderation_logs l
 LEFT JOIN users u ON u.id = l.user_id `+whereSQL+`
 ORDER BY l.created_at DESC, l.id DESC
-LIMIT $`+fmt.Sprint(len(queryArgs)-1)+` OFFSET $`+fmt.Sprint(len(queryArgs)),
+LIMIT ? OFFSET ?`,
 		queryArgs...,
 	)
 	if err != nil {

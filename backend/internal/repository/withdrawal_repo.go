@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"strings"
 
 	"ikik-api/internal/service"
@@ -298,7 +297,7 @@ func (r *withdrawalRepository) list(ctx context.Context, params service.Withdraw
 SELECT `+withdrawalColumns+`
 FROM user_withdrawal_requests`+where+`
 ORDER BY created_at DESC, id DESC
-LIMIT $`+fmt.Sprint(len(args)-1)+` OFFSET $`+fmt.Sprint(len(args)),
+LIMIT ? OFFSET ?`,
 		args...,
 	)
 	if err != nil {
