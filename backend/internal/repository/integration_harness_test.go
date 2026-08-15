@@ -23,15 +23,19 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-	_ "github.com/lib/pq"
+	_ "github.com/go-sql-driver/mysql"
 	redisclient "github.com/redis/go-redis/v9"
-	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
+	testcontainers "github.com/testcontainers/testcontainers-go"
 	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
-	redisImageTag    = "redis:8.4-alpine"
-	postgresImageTag = "postgres:18.1-alpine3.23"
+	redisImageTag     = "redis:8.4-alpine"
+	mariadbImageTag   = "mariadb:10.11.14"
+	mariadbRootUser   = "root"
+	mariadbRootPass   = "rootpass"
+	mariadbDatabase   = "ikik_api_test"
 )
 
 var (
@@ -60,20 +64,25 @@ func TestMain(m *testing.M) {
 		os.Exit(0)
 	}
 
-	postgresImage := selectDockerImage(ctx, postgresImageTag)
-	pgContainer, err := tcpostgres.Run(
-		ctx,
-		postgresImage,
-		tcpostgres.WithDatabase("ikik_api_test"),
-		tcpostgres.WithUsername("postgres"),
-		tcpostgres.WithPassword("postgres"),
-		tcpostgres.BasicWaitStrategies(),
-	)
+	mariadbImage := selectDockerImage(ctx, mariadbImageTag)
+	mariadbContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image: mariadbImage,
+			ExposedPorts: []string{"3306/tcp"},
+			Env: map[string]string{
+				"MYSQL_ROOT_PASSWORD": mariadbRootPass,
+				"MYSQL_DATABASE":      mariadbDatabase,
+			},
+			WaitingFor: wait.ForListeningPort("3306/tcp").
+				WithStartupTimeout(120 * time.Second),
+		},
+		Started: true,
+	})
 	if err != nil {
-		log.Printf("failed to start postgres container: %v", err)
+		log.Printf("failed to start mariadb container: %v", err)
 		os.Exit(1)
 	}
-	defer func() { _ = pgContainer.Terminate(ctx) }()
+	defer func() { _ = mariadbContainer.Terminate(ctx) }()
 
 	redisContainer, err := tcredis.Run(
 		ctx,
@@ -85,11 +94,20 @@ func TestMain(m *testing.M) {
 	}
 	defer func() { _ = redisContainer.Terminate(ctx) }()
 
-	dsn, err := pgContainer.ConnectionString(ctx, "sslmode=disable", "TimeZone=UTC")
+	mariadbHost, err := mariadbContainer.Host(ctx)
 	if err != nil {
-		log.Printf("failed to get postgres dsn: %v", err)
+		log.Printf("failed to get mariadb host: %v", err)
 		os.Exit(1)
 	}
+	mariadbPort, err := mariadbContainer.MappedPort(ctx, "3306/tcp")
+	if err != nil {
+		log.Printf("failed to get mariadb port: %v", err)
+		os.Exit(1)
+	}
+	dsn := fmt.Sprintf(
+		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true&time_zone=%%27%%2B00%%3A00%%27",
+		mariadbRootUser, mariadbRootPass, mariadbHost, mariadbPort.Port(), mariadbDatabase,
+	)
 
 	integrationDB, err = openSQLWithRetry(ctx, dsn, 30*time.Second)
 	if err != nil {
@@ -102,7 +120,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// 创建 ent client 用于集成测试
-	drv := entsql.OpenDB(dialect.Postgres, integrationDB)
+	drv := entsql.OpenDB(dialect.MySQL, integrationDB)
 	integrationEntClient = dbent.NewClient(dbent.Driver(drv))
 
 	redisHost, err := redisContainer.Host(ctx)
@@ -117,7 +135,7 @@ func TestMain(m *testing.M) {
 	}
 
 	integrationRedis = redisclient.NewClient(&redisclient.Options{
-		Addr: fmt.Sprintf("%s:%d", redisHost, redisPort.Int()),
+		Addr: fmt.Sprintf("%s:%s", redisHost, redisPort.Port()),
 		DB:   0,
 	})
 	if err := integrationRedis.Ping(ctx).Err(); err != nil {
@@ -161,7 +179,7 @@ func openSQLWithRetry(ctx context.Context, dsn string, timeout time.Duration) (*
 	var lastErr error
 
 	for time.Now().Before(deadline) {
-		db, err := sql.Open("postgres", dsn)
+		db, err := sql.Open("mysql", dsn)
 		if err != nil {
 			lastErr = err
 			time.Sleep(250 * time.Millisecond)

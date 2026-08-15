@@ -7,8 +7,6 @@ import (
 
 	"ikik-api/internal/config"
 	"github.com/stretchr/testify/require"
-
-	_ "github.com/lib/pq"
 )
 
 func TestBuildDBPoolSettings(t *testing.T) {
@@ -38,7 +36,7 @@ func TestApplyDBPoolSettings(t *testing.T) {
 		},
 	}
 
-	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=postgres sslmode=disable")
+	db, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/test")
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		_ = db.Close()
