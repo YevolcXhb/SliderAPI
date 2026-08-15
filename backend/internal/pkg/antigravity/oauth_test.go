@@ -680,9 +680,9 @@ func TestConstants_值正确(t *testing.T) {
 	if ClientID != "YOUR_ANTIGRAVITY_OAUTH_CLIENT_ID" {
 		t.Errorf("ClientID 不匹配: got %s", ClientID)
 	}
-	secret, err := getClientSecret()
+	_, err := getClientSecret()
 	if err == nil {
-		t.Fatalf("getClientSecret 应返回默认值，但报错: %v", err)
+		t.Fatalf("getClientSecret 默认值为空时应返回错误")
 	}
 	
 	if RedirectURI != "http://localhost:8085/callback" {
