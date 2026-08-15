@@ -83,6 +83,11 @@ func (s *AccountTestService) ProbeModelList(ctx context.Context, input ModelProb
 			return ModelProbeListResult{}, errors.New("kiro base url is required")
 		}
 		return s.probeOpenAIModelListWithFallback(ctx, input.BaseURL, apiKey, "")
+	case PlatformCustom:
+		if strings.TrimSpace(input.BaseURL) == "" {
+			return ModelProbeListResult{}, errors.New("custom base url is required")
+		}
+		return s.probeOpenAIModelListWithFallback(ctx, input.BaseURL, apiKey, "")
 	case PlatformGemini:
 		return s.probeGeminiModelList(ctx, input.BaseURL, apiKey)
 	case PlatformAnthropic:
@@ -293,6 +298,11 @@ func (s *AccountTestService) buildModelProbeRequest(ctx context.Context, platfor
 			return nil, errors.New("kiro base url is required")
 		}
 		return s.buildOpenAIChatCompletionsProbeRequestWithFallback(ctx, baseURL, apiKey, openAIChatCompletionsMinimalProbePayload(model), "")
+	case platform == PlatformCustom && mode == ModelProbeModeOpenAIChatCompletions:
+		if strings.TrimSpace(baseURL) == "" {
+			return nil, errors.New("custom base url is required")
+		}
+		return s.buildOpenAIChatCompletionsProbeRequestWithFallback(ctx, baseURL, apiKey, openAIChatCompletionsMinimalProbePayload(model), "")
 	case platform == PlatformGemini && mode == ModelProbeModeGeminiGenerateContent:
 		normalizedBaseURL, err := s.normalizeProbeBaseURL(baseURL, geminicli.AIStudioBaseURL)
 		if err != nil {
@@ -460,6 +470,8 @@ func normalizeModelProbePlatform(platform string) string {
 		return PlatformOpenAI
 	case PlatformKiro:
 		return PlatformKiro
+	case PlatformCustom:
+		return PlatformCustom
 	case PlatformGemini:
 		return PlatformGemini
 	case PlatformAnthropic, "claude":
@@ -480,6 +492,10 @@ func normalizeModelProbeMode(platform, mode string) string {
 			return ModelProbeModeOpenAIChatCompletions
 		}
 	case PlatformKiro:
+		if mode == "" || mode == ModelProbeModeOpenAIChatCompletions {
+			return ModelProbeModeOpenAIChatCompletions
+		}
+	case PlatformCustom:
 		if mode == "" || mode == ModelProbeModeOpenAIChatCompletions {
 			return ModelProbeModeOpenAIChatCompletions
 		}

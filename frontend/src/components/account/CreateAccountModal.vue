@@ -4358,7 +4358,7 @@ watch(
     } else if (newPlatform === 'grok') {
       accountCategory.value = isUserScope.value ? 'apikey' : 'oauth-based'
       addMethod.value = 'oauth'
-      modelRestrictionMode.value = 'mapping'
+      modelRestrictionMode.value = 'whitelist'
       form.concurrency = 1
     } else {
       allowOverages.value = false

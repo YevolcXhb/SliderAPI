@@ -796,9 +796,6 @@ func (a *Account) resolveModelMapping(rawMapping map[string]any) map[string]stri
 		if a.Platform == domain.PlatformAntigravity {
 			return domain.DefaultAntigravityModelMapping
 		}
-		if a.Platform == domain.PlatformGrok {
-			return xai.DefaultModelMapping()
-		}
 		if a.Platform == domain.PlatformKiro {
 			return kiro.DefaultModelMapping()
 		}
@@ -809,9 +806,6 @@ func (a *Account) resolveModelMapping(rawMapping map[string]any) map[string]stri
 		// Antigravity 平台使用默认映射
 		if a.Platform == domain.PlatformAntigravity {
 			return domain.DefaultAntigravityModelMapping
-		}
-		if a.Platform == domain.PlatformGrok {
-			return xai.DefaultModelMapping()
 		}
 		if a.Platform == domain.PlatformKiro {
 			return kiro.DefaultModelMapping()
@@ -841,9 +835,6 @@ func (a *Account) resolveModelMapping(rawMapping map[string]any) map[string]stri
 	// Antigravity 平台使用默认映射
 	if a.Platform == domain.PlatformAntigravity {
 		return domain.DefaultAntigravityModelMapping
-	}
-	if a.Platform == domain.PlatformGrok {
-		return xai.DefaultModelMapping()
 	}
 	if a.Platform == domain.PlatformKiro {
 		return kiro.DefaultModelMapping()

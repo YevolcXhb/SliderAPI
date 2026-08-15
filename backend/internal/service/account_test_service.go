@@ -195,6 +195,10 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 		return s.testOpenAIAccountConnection(c, account, modelID, prompt, normalizeAccountTestMode(mode))
 	}
 
+	if account.Platform == PlatformCustom {
+		return s.testCustomAccountConnection(c, account, modelID, prompt)
+	}
+
 	if account.IsGrok() {
 		return s.testGrokAccountConnection(c, account, modelID, prompt)
 	}
@@ -215,6 +219,37 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 	}
 
 	return s.testClaudeAccountConnection(c, account, modelID)
+}
+
+// testCustomAccountConnection tests an OpenAI-compatible custom upstream.
+func (s *AccountTestService) testCustomAccountConnection(c *gin.Context, account *Account, modelID string, prompt string) error {
+	if account.Type != AccountTypeAPIKey {
+		return s.sendErrorAndEnd(c, "Custom accounts only support API key type")
+	}
+
+	authToken := strings.TrimSpace(account.GetCredential("api_key"))
+	if authToken == "" {
+		return s.sendErrorAndEnd(c, "No API key available")
+	}
+	baseURL := strings.TrimSpace(account.GetCredential("base_url"))
+	if baseURL == "" {
+		return s.sendErrorAndEnd(c, "No base URL available for custom account")
+	}
+	normalizedBaseURL, err := s.validateUpstreamBaseURL(baseURL)
+	if err != nil {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Invalid base URL: %s", err.Error()))
+	}
+
+	testModelID := strings.TrimSpace(modelID)
+	if testModelID == "" {
+		testModelID = openai.DefaultTestModel
+	}
+	testModelID = account.GetMappedModel(testModelID)
+	if testModelID == "" {
+		testModelID = openai.DefaultTestModel
+	}
+
+	return s.testOpenAIChatCompletionsConnection(c, account, testModelID, prompt, normalizedBaseURL, authToken)
 }
 
 func (s *AccountTestService) testClaudeWebAccountConnection(c *gin.Context, account *Account, modelID string, prompt string) error {
