@@ -2587,19 +2587,19 @@ func (r *usageLogRepository) getUserAccountSharingAccountStats(ctx context.Conte
 		summary AS (
 			SELECT
 				COUNT(*) AS owned_accounts,
-				SUM(CASE WHEN share_mode = 'private' THEN 1 ELSE 0 END) AS private_accounts,
-				SUM(CASE WHEN share_mode = 'public' AND share_status = 'pending' THEN 1 ELSE 0 END) AS public_pending_accounts,
-				SUM(CASE WHEN share_mode = 'public' AND share_status = 'approved' THEN 1 ELSE 0 END) AS public_approved_accounts,
-				SUM(CASE WHEN share_mode = 'public' AND share_status = 'suspended' THEN 1 ELSE 0 END) AS public_suspended_accounts,
-				COALESCE(SUM(self_requests), 0) AS self_requests,
-				COALESCE(SUM(self_tokens), 0) AS self_tokens,
-				COALESCE(SUM(self_actual_cost), 0) AS self_actual_cost,
-				COALESCE(SUM(self_account_cost), 0) AS self_account_cost,
-				COALESCE(SUM(external_requests), 0) AS external_requests,
-				COALESCE(SUM(external_consumer_charge), 0) AS external_consumer_charge,
-				COALESCE(SUM(external_account_cost), 0) AS external_account_cost,
-				COALESCE(SUM(external_owner_credit), 0) AS external_owner_credit,
-				COALESCE(SUM(external_platform_fee), 0) AS external_platform_fee
+				COALESCE(SUM(CASE WHEN share_mode = 'private' THEN 1 ELSE 0 END), 0) AS private_accounts,
+				COALESCE(SUM(CASE WHEN share_mode = 'public' AND share_status = 'pending' THEN 1 ELSE 0 END), 0) AS public_pending_accounts,
+				COALESCE(SUM(CASE WHEN share_mode = 'public' AND share_status = 'approved' THEN 1 ELSE 0 END), 0) AS public_approved_accounts,
+				COALESCE(SUM(CASE WHEN share_mode = 'public' AND share_status = 'suspended' THEN 1 ELSE 0 END), 0) AS public_suspended_accounts,
+				COALESCE(SUM(COALESCE(self_requests, 0)), 0) AS self_requests,
+				COALESCE(SUM(COALESCE(self_tokens, 0)), 0) AS self_tokens,
+				COALESCE(SUM(COALESCE(self_actual_cost, 0)), 0) AS self_actual_cost,
+				COALESCE(SUM(COALESCE(self_account_cost, 0)), 0) AS self_account_cost,
+				COALESCE(SUM(COALESCE(external_requests, 0)), 0) AS external_requests,
+				COALESCE(SUM(COALESCE(external_consumer_charge, 0)), 0) AS external_consumer_charge,
+				COALESCE(SUM(COALESCE(external_account_cost, 0)), 0) AS external_account_cost,
+				COALESCE(SUM(COALESCE(external_owner_credit, 0)), 0) AS external_owner_credit,
+				COALESCE(SUM(COALESCE(external_platform_fee, 0)), 0) AS external_platform_fee
 			FROM account_stats
 		),
 		paged_accounts AS (

@@ -99,6 +99,7 @@ FROM combined
 ORDER BY bucket ASC`
 
 	args := append(usageArgs, errorArgs...)
+	args = append(args, errorArgs...)
 
 	rows, err := r.db.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -227,7 +228,7 @@ FROM combined
 WHERE platform IS NOT NULL AND platform <> ''
 ORDER BY request_count DESC`
 
-	rows, err := r.db.QueryContext(ctx, q, start, end)
+	rows, err := r.db.QueryContext(ctx, q, start, end, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +315,7 @@ WHERE group_id IS NOT NULL
 ORDER BY request_count DESC
 LIMIT ?`
 
-	rows, err := r.db.QueryContext(ctx, q, start, end, platform, limit)
+	rows, err := r.db.QueryContext(ctx, q, start, end, platform, start, end, platform, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -356,7 +357,7 @@ func opsBucketExprForUsage(bucketSeconds int) string {
 		return "DATE_FORMAT(ul.created_at, '%Y-%m-%d %H:00:00')"
 	case 300:
 		// 5-minute buckets in UTC.
-		return "to_timestamp(floor(UNIX_TIMESTAMP(ul.created_at) / 300) * 300)"
+		return "FROM_UNIXTIME(floor(UNIX_TIMESTAMP(ul.created_at) / 300) * 300)"
 	default:
 		return "DATE_FORMAT(ul.created_at, '%Y-%m-%d %H:%i:00')"
 	}
@@ -367,7 +368,7 @@ func opsBucketExprForError(bucketSeconds int) string {
 	case 3600:
 		return "DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00')"
 	case 300:
-		return "to_timestamp(floor(UNIX_TIMESTAMP(created_at) / 300) * 300)"
+		return "FROM_UNIXTIME(floor(UNIX_TIMESTAMP(created_at) / 300) * 300)"
 	default:
 		return "DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:00')"
 	}

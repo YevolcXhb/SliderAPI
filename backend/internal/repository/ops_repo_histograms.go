@@ -28,7 +28,7 @@ func (r *opsRepository) GetLatencyHistogram(ctx context.Context, filter *service
 
 	q := `
 SELECT
-  ` + rangeExpr + ` AS range,
+  ` + rangeExpr + ` AS bucket_range,
   COALESCE(COUNT(*), 0) AS count,
   ` + orderExpr + ` AS ord
 FROM usage_logs ul

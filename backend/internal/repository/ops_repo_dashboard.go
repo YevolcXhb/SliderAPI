@@ -822,6 +822,9 @@ FROM usage_logs ul
 		&dP50, &dP90, &dP95, &dP99, &dAvg, &dMax,
 		&tP50, &tP90, &tP95, &tP99, &tAvg, &tMax,
 	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return service.OpsPercentiles{}, service.OpsPercentiles{}, nil
+		}
 		return service.OpsPercentiles{}, service.OpsPercentiles{}, err
 	}
 

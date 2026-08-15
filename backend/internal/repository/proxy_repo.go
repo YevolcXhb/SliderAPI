@@ -512,7 +512,7 @@ func (r *proxyRepository) ListOwnedByUserID(ctx context.Context, ownerUserID int
 			AND p.deleted_at IS NULL
 		GROUP BY p.id, p.name, p.protocol, p.host, p.port, p.username, p.password, p.status, p.owner_user_id, p.created_at, p.updated_at
 		ORDER BY p.created_at DESC, p.id DESC
-	`, ownerUserID)
+	`, ownerUserID, ownerUserID)
 	if err != nil {
 		return nil, err
 	}

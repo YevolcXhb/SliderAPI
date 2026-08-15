@@ -55,3 +55,20 @@ func TestGetUserAccountSharingDashboardMariaDBPlaceholders(t *testing.T) {
 	require.NotNil(t, stats)
 	require.NotZero(t, stats.Summary.OwnedAccounts)
 }
+
+func TestGetUserAccountSharingDashboardEmptyUser(t *testing.T) {
+	ctx := context.Background()
+	tx := testEntTx(t)
+	client := tx.Client()
+	repo := newUsageLogRepositoryWithSQL(client, tx)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email: fmt.Sprintf("account-sharing-empty-%d@example.com", time.Now().UnixNano()),
+	})
+
+	now := time.Now().UTC()
+	stats, err := repo.GetUserAccountSharingDashboard(ctx, user.ID, now.Add(-time.Hour), now.Add(time.Hour), "day", 1, 20)
+	require.NoError(t, err)
+	require.NotNil(t, stats)
+	require.Zero(t, stats.Summary.OwnedAccounts)
+}
