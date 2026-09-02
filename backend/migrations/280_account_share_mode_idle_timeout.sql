@@ -1,0 +1,1 @@
+-- [MariaDB] PL/pgSQL DO block removed

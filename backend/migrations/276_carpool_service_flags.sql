@@ -1,0 +1,3 @@
+ALTER TABLE carpool_pools
+    ADD COLUMN IF NOT EXISTS system_proxy_enabled TINYINT(1) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS risk_control_enabled TINYINT(1) NOT NULL DEFAULT 0;

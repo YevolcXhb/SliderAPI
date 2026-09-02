@@ -1,0 +1,98 @@
+CREATE TABLE IF NOT EXISTS shop_categories (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    icon VARCHAR(255),
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    enabled TINYINT(1) NOT NULL DEFAULT 1,
+    description TEXT,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+);
+
+CREATE TABLE IF NOT EXISTS shop_products (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    category_id BIGINT REFERENCES shop_categories(id) ON DELETE SET NULL,
+    name VARCHAR(150) NOT NULL,
+    cover_url TEXT,
+    description TEXT,
+    price DECIMAL(20,2) NOT NULL DEFAULT 0,
+    original_price DECIMAL(20,2),
+    enabled TINYINT(1) NOT NULL DEFAULT 1,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    min_purchase INTEGER NOT NULL DEFAULT 1,
+    max_purchase INTEGER NOT NULL DEFAULT 1,
+    auto_delivery TINYINT(1) NOT NULL DEFAULT 1,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT shop_products_price_nonnegative CHECK (price >= 0 AND (original_price IS NULL OR original_price >= 0)),
+    CONSTRAINT shop_products_purchase_range CHECK (min_purchase > 0 AND max_purchase >= min_purchase)
+);
+
+CREATE TABLE IF NOT EXISTS shop_orders (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    order_no VARCHAR(64) NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    product_id BIGINT NOT NULL REFERENCES shop_products(id) ON DELETE RESTRICT,
+    product_name VARCHAR(150) NOT NULL,
+    product_cover_url TEXT,
+    product_description TEXT,
+    unit_price DECIMAL(20,2) NOT NULL,
+    quantity INTEGER NOT NULL,
+    total_amount DECIMAL(20,2) NOT NULL,
+    payment_method VARCHAR(30) NOT NULL,
+    payment_order_id BIGINT REFERENCES payment_orders(id) ON DELETE SET NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    delivered_cards JSON NOT NULL DEFAULT '[]',
+    paid_at DATETIME(6),
+    completed_at DATETIME(6),
+    cancelled_at DATETIME(6),
+    failed_reason TEXT,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT shop_orders_quantity_positive CHECK (quantity > 0),
+    CONSTRAINT shop_orders_amount_nonnegative CHECK (unit_price >= 0 AND total_amount >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS shop_card_keys (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT NOT NULL REFERENCES shop_products(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'available',
+    order_id BIGINT REFERENCES shop_orders(id) ON DELETE SET NULL,
+    locked_at DATETIME(6),
+    locked_until DATETIME(6),
+    sold_at DATETIME(6),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    CONSTRAINT shop_card_keys_status_valid CHECK (status IN ('available', 'locked', 'sold', 'disabled'))
+);
+
+ALTER TABLE payment_orders
+    ADD COLUMN IF NOT EXISTS shop_order_id BIGINT REFERENCES shop_orders(id) ON DELETE SET NULL;
+
+ALTER TABLE shop_products
+    ADD COLUMN IF NOT EXISTS original_price DECIMAL(20,2);
+
+ALTER TABLE shop_card_keys
+    ADD COLUMN IF NOT EXISTS locked_at DATETIME(6),
+    ADD COLUMN IF NOT EXISTS locked_until DATETIME(6);
+
+CREATE INDEX IF NOT EXISTS idx_shop_categories_enabled ON shop_categories(enabled);
+CREATE INDEX IF NOT EXISTS idx_shop_categories_sort_order ON shop_categories(sort_order);
+
+CREATE INDEX IF NOT EXISTS idx_shop_products_category_id ON shop_products(category_id);
+CREATE INDEX IF NOT EXISTS idx_shop_products_enabled ON shop_products(enabled);
+CREATE INDEX IF NOT EXISTS idx_shop_products_sort_order ON shop_products(sort_order);
+
+CREATE INDEX IF NOT EXISTS idx_shop_card_keys_product_status ON shop_card_keys(product_id, status);
+CREATE INDEX IF NOT EXISTS idx_shop_card_keys_order_id ON shop_card_keys(order_id);
+CREATE INDEX IF NOT EXISTS idx_shop_card_keys_status ON shop_card_keys(status);
+CREATE INDEX IF NOT EXISTS idx_shop_card_keys_locked_until ON shop_card_keys(locked_until);
+
+CREATE INDEX IF NOT EXISTS idx_shop_orders_user_id ON shop_orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_shop_orders_product_id ON shop_orders(product_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_shop_orders_payment_order_id ON shop_orders(payment_order_id);  -- [MariaDB] partial index WHERE removed
+CREATE INDEX IF NOT EXISTS idx_shop_orders_status ON shop_orders(status);
+CREATE INDEX IF NOT EXISTS idx_shop_orders_created_at ON shop_orders(created_at);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_orders_shop_order_id ON payment_orders(shop_order_id);  -- [MariaDB] partial index WHERE removed

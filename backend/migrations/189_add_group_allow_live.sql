@@ -1,0 +1,1 @@
+ALTER TABLE groups ADD COLUMN allow_live TINYINT(1) NOT NULL DEFAULT false;

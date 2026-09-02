@@ -1,0 +1,15 @@
+-- usage_logs monthly partition bootstrap.
+--
+-- [MariaDB 重写] PostgreSQL 使用声明式分区（PARTITION OF / pg_partitioned_table）在运行时按月建子分区；
+-- MariaDB 的分区模型完全不同（PARTITION BY RANGE 在建表时定义，子分区通过 ALTER TABLE ... ADD PARTITION 管理，
+-- 且分区表不能有指向它的外键）。usage_logs 默认未分区，原 PG 迁移在未分区时本就是 no-op（仅 RAISE NOTICE）。
+--
+-- 因此本迁移在 MariaDB 下保持 no-op：是否将 usage_logs 转为 RANGE 分区、以及按月滚动子分区的维护，
+-- 交由独立的运维计划 + 后台作业处理（参见 REFACTOR_PROPOSAL 的 usage_logs 分区方案）。
+-- 若未来启用 MariaDB 分区，请新建独立迁移用如下形态：
+--   ALTER TABLE usage_logs
+--     PARTITION BY RANGE (TO_DAYS(created_at)) (
+--       PARTITION p_init VALUES LESS THAN (TO_DAYS('1970-02-01'))
+--     );
+--   并由后台作业定期 ADD PARTITION（本月/下月）与 DROP PARTITION（过期）。
+DO NULL;
