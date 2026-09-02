@@ -2251,6 +2251,19 @@ export default {
 
   // Admin
   admin: {
+    compliance: {
+      title: 'Administrator Compliance Acknowledgement',
+      description: 'Please read and agree to the compliance commitment before using the admin console.',
+      documentZh: 'View compliance document (Simplified Chinese)',
+      documentEn: 'View compliance document (English)',
+      version: 'Compliance version',
+      phraseLabel: 'Confirmation phrase',
+      phraseHint: 'Enter the confirmation phrase shown next to the document links above and submit.',
+      accept: 'Submit Acknowledgement',
+      submitting: 'Submitting...',
+      acceptFailed: 'Acknowledgement failed, please retry',
+      logout: 'Log out',
+    },
     riskControl: {
       title: 'Risk Control',
       description: 'Configure content moderation and review audit records',
