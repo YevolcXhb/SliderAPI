@@ -49,7 +49,7 @@ JOIN (
                    END AS rebate_amount,
                    pal.created_at AS audit_created_at
             FROM payment_audit_logs pal
-            JOIN payment_orders po ON CAST(po.id AS CHAR) = pal.order_id
+            JOIN payment_orders po ON po.id = CAST(pal.order_id AS UNSIGNED)
             JOIN user_affiliates invitee_aff ON invitee_aff.user_id = po.user_id
             WHERE pal.action = 'AFFILIATE_REBATE_APPLIED'
         ) ra

@@ -4,7 +4,7 @@ UPDATE payment_orders
 SET provider_key = (
     SELECT provider_key
     FROM payment_provider_instances
-    WHERE CAST(id AS CHAR) = payment_orders.provider_instance_id
+    WHERE CAST(id AS CHAR) = payment_orders.provider_instance_id COLLATE utf8mb4_bin
 )
 WHERE provider_key IS NULL
   AND provider_instance_id IS NOT NULL;

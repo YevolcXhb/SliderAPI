@@ -45,6 +45,6 @@ WHERE po.order_type = 'balance'
   AND po.status = 'COMPLETED'
   AND NOT EXISTS (
       SELECT 1 FROM payment_audit_logs pal
-      WHERE pal.order_id = CAST(po.id AS CHAR)
+      WHERE CAST(pal.order_id AS UNSIGNED) = po.id
         AND pal.action IN ('AFFILIATE_REBATE_APPLIED', 'AFFILIATE_REBATE_SKIPPED')
   );
