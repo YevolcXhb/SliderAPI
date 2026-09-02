@@ -238,8 +238,8 @@ func TestBuildDatabaseConnectionDSNsUsesMySQLBootstrap(t *testing.T) {
 
 	bootstrapDSN, targetDSN := buildDatabaseConnectionDSNs(cfg)
 
-	if !strings.Contains(bootstrapDSN, "sub2api:secret@tcp(db:3306)/sub2api") {
-		t.Fatalf("bootstrap DSN = %q, want MariaDB DSN form", bootstrapDSN)
+	if !strings.Contains(bootstrapDSN, "sub2api:secret@tcp(db:3306)/?") {
+		t.Fatalf("bootstrap DSN = %q, want no-db MariaDB DSN form", bootstrapDSN)
 	}
 	if !strings.Contains(targetDSN, "sub2api:secret@tcp(db:3306)/sub2api") {
 		t.Fatalf("target DSN = %q, want configured database", targetDSN)

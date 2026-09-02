@@ -213,12 +213,11 @@ func buildDSN(cfg *DatabaseConfig, dbName string) string {
 }
 
 // buildDatabaseConnectionDSNs 返回 (bootstrap, target) DSN。
-//   - postgres 方言：bootstrap = "postgres" 维护库（必须存在的系统库）
-//   - mysql 方言下没有等价维护库，使用目标库本身即可（用户需拥有 CREATE DATABASE 权限）
+//   - mysql 方言下没有像 PostgreSQL 那样永远存在的 "postgres" 维护库：
+//     bootstrap 连接不带库名（ping 不依赖目标库是否存在），先检查/创建目标库，
+//     再连接目标库验证；CREATE DATABASE 由 TestDatabaseConnection 处理。
 func buildDatabaseConnectionDSNs(cfg *DatabaseConfig) (bootstrapDSN, targetDSN string) {
-	// MariaDB uses the target schema for both bootstrap and application
-	// connections; CREATE DATABASE is handled by TestDatabaseConnection.
-	return buildDSN(cfg, cfg.DBName), buildDSN(cfg, cfg.DBName)
+	return buildDSN(cfg, ""), buildDSN(cfg, cfg.DBName)
 }
 
 // TestDatabaseConnection tests the database connection and creates database if not exists
