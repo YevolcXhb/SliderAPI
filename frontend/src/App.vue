@@ -5,11 +5,8 @@ import Toast from '@/components/common/Toast.vue'
 import NavigationProgress from '@/components/common/NavigationProgress.vue'
 import { resolveDocumentTitle } from '@/router/title'
 import AnnouncementPopup from '@/components/common/AnnouncementPopup.vue'
-import { ref } from 'vue'
 import { useAppStore, useAuthStore, useSubscriptionStore, useAnnouncementStore } from '@/stores'
 import { getSetupStatus } from '@/api/setup'
-import { getAdminComplianceStatus } from '@/api/admin/compliance'
-import AdminComplianceDialog from '@/components/admin/AdminComplianceDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -19,29 +16,6 @@ const subscriptionStore = useSubscriptionStore()
 const announcementStore = useAnnouncementStore()
 const skipSetupRedirect =
   import.meta.env.DEV && import.meta.env.VITE_SKIP_SETUP_REDIRECT === 'true'
-
-const showComplianceDialog = ref(false)
-
-async function checkAdminCompliance() {
-  if (!authStore.isAuthenticated) return
-  try {
-    const status = await getAdminComplianceStatus()
-    if (status && status.required) {
-      showComplianceDialog.value = true
-    }
-  } catch {
-    // Non-fatal: compliance check failure should not block the app
-  }
-}
-
-function handleComplianceCancel() {
-  showComplianceDialog.value = false
-}
-
-function handleComplianceAccepted() {
-  showComplianceDialog.value = false
-  window.location.reload()
-}
 
 /**
  * Update favicon dynamically
@@ -86,7 +60,6 @@ watch(
         console.error('Failed to preload subscriptions:', error)
       })
       subscriptionStore.startPolling()
-      checkAdminCompliance()
 
       // Announcements: new login vs page refresh restore
       if (oldValue === false) {
@@ -147,9 +120,4 @@ onMounted(async () => {
   <RouterView />
   <Toast />
   <AnnouncementPopup />
-  <AdminComplianceDialog
-    :show="showComplianceDialog"
-    @close="handleComplianceCancel"
-    @accepted="handleComplianceAccepted"
-  />
 </template>

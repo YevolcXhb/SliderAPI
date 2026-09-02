@@ -2251,19 +2251,7 @@ export default {
 
   // Admin
   admin: {
-    compliance: {
-      title: '管理员合规确认',
-      description: '继续使用管理后台前，请阅读并同意以下合规承诺。',
-      documentZh: '查看合规文件（简体中文）',
-      documentEn: 'View compliance document (English)',
-      version: '合规版本',
-      phraseLabel: '确认短语',
-      phraseHint: '请输入上方文档链接旁显示的确认短语并提交。',
-      accept: '提交确认',
-      submitting: '提交中...',
-      acceptFailed: '确认失败，请重试',
-      logout: '退出登录',
-    },
+
     riskControl: {
       title: '风控中心',
       description: '配置内容审计策略并查看审核记录',

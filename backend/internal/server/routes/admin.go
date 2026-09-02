@@ -29,10 +29,8 @@ func RegisterAdminRoutes(
 	admin.Use(panelRateLimiter.Global())
 	// 审计中间件挂在认证之后：所有管理面变更类操作 + 敏感读取入审计日志
 	admin.Use(gin.HandlerFunc(auditLog))
-	admin.Use(middleware.AdminComplianceGuard(settingService))
 	{
 		// 部署与运营合规确认
-		registerAdminComplianceRoutes(admin, h)
 
 		// 仪表盘
 		registerDashboardRoutes(admin, h)
@@ -172,14 +170,6 @@ func registerAuditLogRoutes(admin *gin.RouterGroup, h *handler.Handlers, _ middl
 		auditLogs.GET("/:id", h.Admin.AuditLog.Get)
 		// 清空需现场 TOTP 校验（在 handler 内强制），不复用 step-up sudo 窗口
 		auditLogs.POST("/clear", h.Admin.AuditLog.Clear)
-	}
-}
-
-func registerAdminComplianceRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
-	compliance := admin.Group("/compliance")
-	{
-		compliance.GET("", h.Admin.Compliance.GetStatus)
-		compliance.POST("/accept", h.Admin.Compliance.Accept)
 	}
 }
 

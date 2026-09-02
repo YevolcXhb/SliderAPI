@@ -49,7 +49,6 @@ type AdminHandlers struct {
 	Shop                   *admin.ShopHandler
 	Module                 *admin.ModuleHandler
 	Affiliate              *admin.AffiliateHandler
-	Compliance             *admin.ComplianceHandler
 	AuditLog               *admin.AuditLogHandler
 }
 
