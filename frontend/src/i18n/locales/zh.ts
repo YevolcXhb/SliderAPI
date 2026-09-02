@@ -332,7 +332,7 @@ export default {
     description: '配置您的 ikik-api 实例',
     database: {
       title: '数据库配置',
-      description: '连接到您的 PostgreSQL 数据库',
+  description: '连接到您的 MariaDB 10.11 数据库',
       host: '主机',
       port: '端口',
       username: '用户名',

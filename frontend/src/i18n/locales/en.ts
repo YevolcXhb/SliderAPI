@@ -332,7 +332,7 @@ export default {
     description: 'Configure your ikik-api instance',
     database: {
       title: 'Database Configuration',
-      description: 'Connect to your PostgreSQL database',
+      description: 'Connect to your MariaDB 10.11 database',
       host: 'Host',
       port: 'Port',
       username: 'Username',

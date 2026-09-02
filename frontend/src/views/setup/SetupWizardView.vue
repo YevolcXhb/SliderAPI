@@ -86,7 +86,7 @@
                 v-model.number="formData.database.port"
                 type="number"
                 class="input"
-                placeholder="5432"
+                placeholder="3306"
               />
             </div>
           </div>
@@ -110,7 +110,7 @@
                 v-model="formData.database.user"
                 type="text"
                 class="input"
-                placeholder="postgres"
+                placeholder="sub2api"
               />
             </div>
             <div>
@@ -131,7 +131,7 @@
                 v-model="formData.database.dbname"
                 type="text"
                 class="input"
-                placeholder="ikik_api"
+                placeholder="sub2api"
               />
             </div>
             <div>
@@ -533,10 +533,10 @@ const getCurrentPort = (): number => {
 const formData = reactive<InstallRequest>({
   database: {
     host: 'localhost',
-    port: 5432,
-    user: 'postgres',
+    port: 3306,
+    user: 'sub2api',
     password: '',
-    dbname: 'ikik_api',
+    dbname: 'sub2api',
     sslmode: 'disable'
   },
   redis: {
