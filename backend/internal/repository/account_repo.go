@@ -671,7 +671,9 @@ func lockAndMergeAccountProbeExtra(
 		FROM accounts
 		WHERE id = ? AND deleted_at IS NULL
 		FOR UPDATE
-	`, account.ID, account.Platform, account.Type, string(credentials), proxyID)
+	`, account.Platform, account.Type, string(credentials), proxyID,
+		account.Platform, account.Type, string(credentials), string(credentials),
+		proxyID, account.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -866,7 +868,7 @@ func (r *accountRepository) UpdateCredentials(ctx context.Context, id int64, cre
 			END,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL
-	`, string(payload), id)
+	`, string(payload), string(payload), string(payload), id)
 	if err != nil {
 		return err
 	}
