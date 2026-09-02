@@ -13,7 +13,6 @@ const (
 type claudeWebConversationState struct {
 	mu                sync.Mutex
 	conversationID    string
-	lastHumanUUID     string
 	lastAssistantUUID string
 	updatedAt         time.Time
 }
@@ -114,8 +113,3 @@ func (s *claudeWebConversationStore) evictOldestLocked() {
 	delete(s.entries, oldestKey)
 	oldestState.mu.Unlock()
 }
-
-var defaultClaudeWebConversationStore = newClaudeWebConversationStore(
-	claudeWebConversationTTL,
-	claudeWebConversationMaxEntries,
-)

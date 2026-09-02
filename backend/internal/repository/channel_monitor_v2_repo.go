@@ -1314,16 +1314,6 @@ func intersectInt64(a, b []int64) []int64 {
 	return out
 }
 
-// shiftSQLPlaceholders shifts existing positional placeholders by offset.
-// 注意:本函数按 ?..? 顺序替换,调用方需保证展开后的 IN 占位符编号
-// 在调用 shift 前已就位(展开后的 ? 占位符不受影响)。
-func shiftSQLPlaceholders(query string, offset int) string {
-	for i := 64; i >= 1; i-- {
-		query = strings.ReplaceAll(query, "?", "?")
-	}
-	return query
-}
-
 // sqlInPlaceholders 返回 n 个以 $ 编号的占位符,起始编号为 startIdx。
 // 用于与既有 $n 占位符混用的场景,保证参数顺序与占位符严格一一对应。
 func sqlInPlaceholders(startIdx, n int) string {
