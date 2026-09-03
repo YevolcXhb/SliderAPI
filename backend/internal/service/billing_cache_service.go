@@ -1370,4 +1370,3 @@ func (s *BillingCacheService) HasUserPlatformQuotaLimit(ctx context.Context, use
 	}
 	return entry.DailyLimitUSD != nil || entry.WeeklyLimitUSD != nil || entry.MonthlyLimitUSD != nil
 }
-

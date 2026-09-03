@@ -3,8 +3,8 @@ package gatewayhook
 import (
 	"context"
 
-	"go.uber.org/zap"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"go.uber.org/zap"
 )
 
 // Chain 按固定顺序执行 pre-flight 钩子。

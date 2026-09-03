@@ -344,6 +344,6 @@ func GrokTokenCacheKey(account *Account) string {
 	return "grok:account:" + strconv.FormatInt(account.ID, 10)
 }
 
-const grokTokenProviderLogComponent  = "grok_token_provider"
+const grokTokenProviderLogComponent = "grok_token_provider"
 
 const grokTempUnschedulableErrorCode = "token_refresh_failed"

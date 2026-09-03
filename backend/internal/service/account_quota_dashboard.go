@@ -540,7 +540,6 @@ func accountQuotaGroupKey(groupID *int64, platform string) string {
 	return fmt.Sprintf("%d", *groupID)
 }
 
-
 func int64PtrValue(value *int64) int64 {
 	if value == nil {
 		return 0

@@ -391,7 +391,7 @@ type OpsUpstreamErrorEvent struct {
 	// from persisted attempt JSON. The logger consults it only when this event is
 	// the final client-visible failure; recovered attempts remain provider-health
 	// telemetry and do not count as failed requests.
-	SkipMonitoring bool `json:"-"`
+	SkipMonitoring      bool   `json:"-"`
 	RequestedModel      string `json:"requested_model,omitempty"`
 	MappedModel         string `json:"mapped_model,omitempty"`
 	KiroModelID         string `json:"kiro_model_id,omitempty"`

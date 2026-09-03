@@ -246,7 +246,7 @@ type UsageInfo struct {
 	ErrorCode string `json:"error_code,omitempty"`
 
 	// 获取 usage 时的错误信息（降级返回，而非 500）
-	Error string `json:"error,omitempty"`
+	Error                string              `json:"error,omitempty"`
 	KiroSubscriptionName string              `json:"kiro_subscription_name,omitempty"`
 	KiroSubscriptionType string              `json:"kiro_subscription_type,omitempty"`
 	KiroResetAt          *time.Time          `json:"kiro_reset_at,omitempty"`
@@ -1931,7 +1931,7 @@ func remainingSecondsUntil(resetAt, now time.Time) int {
 	return remaining
 }
 
-const kiroUsageErrorTTL       = 1 * time.Minute
+const kiroUsageErrorTTL = 1 * time.Minute
 
 const openAICodexProbeVersion = "0.144.1"
 

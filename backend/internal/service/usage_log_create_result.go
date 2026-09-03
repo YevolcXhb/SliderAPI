@@ -80,4 +80,3 @@ func ShouldBillAfterUsageLogCreate(inserted bool, err error) bool {
 	}
 	return !IsUsageLogCreateNotPersisted(err)
 }
-

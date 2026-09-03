@@ -130,11 +130,11 @@ type APIKeyAuthGroupSnapshot struct {
 	// 不一致时才回源 schedulerSnapshot。
 	// 因此这三个字段与 GetByKeyForAuth 的投影都不得删减：漏掉任何一个，
 	// 门会拿到零值 ProfitControlEnabled=false 而静默失效（有集成测试兜底）。
-	ProfitControlEnabled bool    `json:"profit_control_enabled"`
-	ProfitMinMargin      float64 `json:"profit_min_margin"`
-	ProfitSafetyBuffer   float64 `json:"profit_safety_buffer"`
-	OwnerUserID                     *int64   `json:"owner_user_id,omitempty"`
-	Scope                           string   `json:"scope,omitempty"`
+	ProfitControlEnabled        bool    `json:"profit_control_enabled"`
+	ProfitMinMargin             float64 `json:"profit_min_margin"`
+	ProfitSafetyBuffer          float64 `json:"profit_safety_buffer"`
+	OwnerUserID                 *int64  `json:"owner_user_id,omitempty"`
+	Scope                       string  `json:"scope,omitempty"`
 	KiroCacheEmulationEnabled   bool    `json:"kiro_cache_emulation_enabled"`
 	KiroAutoStickyEnabled       bool    `json:"kiro_auto_sticky_enabled"`
 	KiroStickySessionTTLSeconds int     `json:"kiro_sticky_session_ttl_seconds"`

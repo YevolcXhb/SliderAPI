@@ -16,8 +16,9 @@ import (
 
 	"strconv"
 
+	"log/slog"
 	"math"
-	"log/slog")
+)
 
 const (
 	GrokDefaultBaseURLModeAPI     = "api"
@@ -649,6 +650,6 @@ func (s *SettingService) validateHomeStatsGroup(ctx context.Context, groupID int
 }
 
 var ErrHomeStatsGroupInvalid = infraerrors.BadRequest(
-		"HOME_STATS_GROUP_INVALID",
-		"home stats group must be an administrator public group",
-	)
+	"HOME_STATS_GROUP_INVALID",
+	"home stats group must be an administrator public group",
+)

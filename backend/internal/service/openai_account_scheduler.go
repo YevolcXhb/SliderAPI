@@ -3001,8 +3001,8 @@ func calcLoadSkewByMoments(sum float64, sumSquares float64, count int) float64 {
 	return math.Sqrt(variance)
 }
 
-const openAIHybridFairnessRatio    = 0.30
+const openAIHybridFairnessRatio = 0.30
 
-const openAIHybridMaxFairShare     = 0.50
+const openAIHybridMaxFairShare = 0.50
 
 const openAIHybridOverflowProbeMax = 32

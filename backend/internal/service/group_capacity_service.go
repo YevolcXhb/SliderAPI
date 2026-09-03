@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"time"
 	"fmt"
+	"time"
 )
 
 // GroupCapacitySummary holds aggregated capacity for a single group.
@@ -304,7 +304,6 @@ func (s *GroupCapacityService) getGroupCapacity(ctx context.Context, groupID int
 		RPMMax:          rpmMax,
 	}, nil
 }
-
 
 // groupCapacityVisibleGroupRepository is implemented by repositories that can
 // list groups visible to a specific user.

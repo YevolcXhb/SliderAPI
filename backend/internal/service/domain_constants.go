@@ -712,7 +712,7 @@ const AdminAPIKeyPrefix = "admin-"
 // their own failed requests on the usage page. Default false (opt-in).
 const SettingKeyAllowUserViewErrorRequests = "allow_user_view_error_requests"
 
-const UserMinConcurrency     = 1
+const UserMinConcurrency = 1
 
 const UserDefaultConcurrency = 5
 
@@ -722,46 +722,46 @@ const CarpoolSystemProxyFeeUSDDefault = 10.0
 
 const CarpoolRiskControlFeeUSDDefault = 15.0
 
-const PlatformCustom      = domain.PlatformCustom
+const PlatformCustom = domain.PlatformCustom
 
-const RedeemTypePoints       = domain.RedeemTypePoints
+const RedeemTypePoints = domain.RedeemTypePoints
 
-const AdjustmentTypeAdminPoints      = domain.AdjustmentTypeAdminPoints
+const AdjustmentTypeAdminPoints = domain.AdjustmentTypeAdminPoints
 
-const GroupScopePublic      = domain.GroupScopePublic
+const GroupScopePublic = domain.GroupScopePublic
 
 const GroupScopeUserPrivate = domain.GroupScopeUserPrivate
 
 const GroupScopeUserCarpool = domain.GroupScopeUserCarpool
 
-const SettingKeyHomeStatsGroupID               = "home_stats_group_id"
+const SettingKeyHomeStatsGroupID = "home_stats_group_id"
 
-const SettingKeyAutoModelSettings              = "auto_model_settings"
+const SettingKeyAutoModelSettings = "auto_model_settings"
 
-const SettingKeyFreeModelsEnabled              = "free_models_enabled"
+const SettingKeyFreeModelsEnabled = "free_models_enabled"
 
-const SettingKeyCarpoolEnabled                 = "carpool_enabled"
+const SettingKeyCarpoolEnabled = "carpool_enabled"
 
-const SettingKeyCarpoolBaseServiceFeeUSD       = "carpool_base_service_fee_usd"
+const SettingKeyCarpoolBaseServiceFeeUSD = "carpool_base_service_fee_usd"
 
-const SettingKeyCarpoolSystemProxyFeeUSD       = "carpool_system_proxy_fee_usd"
+const SettingKeyCarpoolSystemProxyFeeUSD = "carpool_system_proxy_fee_usd"
 
-const SettingKeyCarpoolRiskControlFeeUSD       = "carpool_risk_control_fee_usd"
+const SettingKeyCarpoolRiskControlFeeUSD = "carpool_risk_control_fee_usd"
 
-const SettingKeyUserPrivateGroupDailyLimitUSD             = "user_private_group_daily_limit_usd"
+const SettingKeyUserPrivateGroupDailyLimitUSD = "user_private_group_daily_limit_usd"
 
-const SettingKeyUserPrivateGroupWeeklyLimitUSD            = "user_private_group_weekly_limit_usd"
+const SettingKeyUserPrivateGroupWeeklyLimitUSD = "user_private_group_weekly_limit_usd"
 
-const SettingKeyUserPrivateGroupMonthlyLimitUSD           = "user_private_group_monthly_limit_usd"
+const SettingKeyUserPrivateGroupMonthlyLimitUSD = "user_private_group_monthly_limit_usd"
 
-const SettingKeyUserPrivateGroupRateMultiplier            = "user_private_group_rate_multiplier"
+const SettingKeyUserPrivateGroupRateMultiplier = "user_private_group_rate_multiplier"
 
-const SettingKeyUserPrivateGroupRPMLimit                  = "user_private_group_rpm_limit"
+const SettingKeyUserPrivateGroupRPMLimit = "user_private_group_rpm_limit"
 
-const SettingKeyUserPrivateGroupCommissionRate            = "user_private_group_commission_rate"
+const SettingKeyUserPrivateGroupCommissionRate = "user_private_group_commission_rate"
 
-const SettingKeyOpenAIImagesResponsesReasoningEffort      = "openai_images_responses_reasoning_effort"
+const SettingKeyOpenAIImagesResponsesReasoningEffort = "openai_images_responses_reasoning_effort"
 
-const SettingKeyOpenAIFreeAccountRepairEnabled            = "openai_free_account_repair_enabled"
+const SettingKeyOpenAIFreeAccountRepairEnabled = "openai_free_account_repair_enabled"
 
 const SettingKeyOpenAIFreeAccountRepairWeeklyThresholdUSD = "openai_free_account_repair_weekly_threshold_usd"

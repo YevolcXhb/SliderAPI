@@ -307,9 +307,9 @@ type UsageStats struct {
 	EndpointPaths            []EndpointStat `json:"endpoint_paths,omitempty"`
 
 	// RequestsWithFirstToken 记录了带首 token 时间的请求数（热路径聚合，不参与 JSON 输出）。
-	RequestsWithFirstToken int64   `json:"-"`
+	RequestsWithFirstToken int64 `json:"-"`
 	// AverageFirstTokenMs 平均首 token 延迟（毫秒，热路径聚合，不参与 JSON 输出）。
-	AverageFirstTokenMs    float64 `json:"-"`
+	AverageFirstTokenMs float64 `json:"-"`
 }
 
 // PlatformUsage 表示某用户/某 API key 在单个"有效平台"维度的用量明细。

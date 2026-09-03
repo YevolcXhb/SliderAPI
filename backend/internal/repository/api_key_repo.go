@@ -400,7 +400,7 @@ func (r *apiKeyRepository) DeleteWithAudit(ctx context.Context, id int64) error 
 func (r *apiKeyRepository) deleteWithTombstone(ctx context.Context, exec *dbent.Client, id int64, tombstoneKey string) error {
 	res, err := exec.ExecContext(ctx, `
 		UPDATE api_keys
-		SET ` + "`key`" + ` = ?, deleted_at = NOW(), updated_at = NOW()
+		SET `+"`key`"+` = ?, deleted_at = NOW(), updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL`, tombstoneKey, id)
 	if err != nil {
 		return err

@@ -251,7 +251,6 @@ func (h *BackupHandler) TestImageStorageConnection(c *gin.Context) {
 	response.Success(c, gin.H{"ok": true, "message": "connection successful"})
 }
 
-
 // GetUsageRetention returns the current usage-log retention configuration.
 // GET /api/v1/admin/backups/usage-retention
 func (h *BackupHandler) GetUsageRetention(c *gin.Context) {

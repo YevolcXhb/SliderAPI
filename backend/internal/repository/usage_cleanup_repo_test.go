@@ -222,7 +222,6 @@ func TestUsageCleanupRepositoryClaimNextPendingTaskNone(t *testing.T) {
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
-
 func TestUsageCleanupRepositoryClaimNextPendingTask(t *testing.T) {
 	db, mock := newSQLMock(t)
 	repo := &usageCleanupRepository{sql: db}
@@ -272,7 +271,6 @@ func TestUsageCleanupRepositoryClaimNextPendingTask(t *testing.T) {
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
-
 func TestUsageCleanupRepositoryClaimNextPendingTaskError(t *testing.T) {
 	db, mock := newSQLMock(t)
 	repo := &usageCleanupRepository{sql: db}
@@ -287,7 +285,6 @@ func TestUsageCleanupRepositoryClaimNextPendingTaskError(t *testing.T) {
 	require.Error(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
-
 
 func TestUsageCleanupRepositoryClaimNextPendingTaskInvalidFilters(t *testing.T) {
 	db, mock := newSQLMock(t)
@@ -325,7 +322,6 @@ func TestUsageCleanupRepositoryClaimNextPendingTaskInvalidFilters(t *testing.T) 
 	require.Error(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
-
 
 func TestUsageCleanupRepositoryMarkTaskSucceeded(t *testing.T) {
 	db, mock := newSQLMock(t)

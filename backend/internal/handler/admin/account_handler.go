@@ -3130,7 +3130,6 @@ func sanitizeExtraBaseRPM(extra map[string]any) {
 	extra["base_rpm"] = v
 }
 
-
 // ModelProbeListRequest is the body for POST /api/v1/admin/accounts/model-probe/list.
 type ModelProbeListRequest struct {
 	Platform string `json:"platform" binding:"required"`

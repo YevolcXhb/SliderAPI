@@ -290,7 +290,6 @@ func parseAffiliateRecordEndTime(raw string, userTZ string) *time.Time {
 	return nil
 }
 
-
 // ExtendAffiliateInviteRewardsRequest is the body for POST /api/v1/admin/affiliates/invite-rewards/extend.
 type ExtendAffiliateInviteRewardsRequest struct {
 	Scope          string  `json:"scope" binding:"required"`

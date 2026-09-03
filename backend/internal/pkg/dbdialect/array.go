@@ -1,4 +1,4 @@
-﻿package dbdialect
+package dbdialect
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ func ArrayJoin[T any](arr []T) string {
 		if i > 0 {
 			sb.WriteString(",")
 		}
-		sb.WriteString(fmt.Sprint(v))
+		_ = sb.WriteString(fmt.Sprint(v))
 	}
 	return sb.String()
 }

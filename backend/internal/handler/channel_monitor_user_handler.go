@@ -198,7 +198,6 @@ func (h *ChannelMonitorUserHandler) GetStatus(c *gin.Context) {
 	response.Success(c, userMonitorDetailToResponse(detail))
 }
 
-
 type channelMonitorCapacitySummaryResponse struct {
 	Items []service.GroupCapacitySummary `json:"items"`
 	Total service.GroupCapacitySummary   `json:"total"`

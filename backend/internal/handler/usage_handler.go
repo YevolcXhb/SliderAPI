@@ -812,7 +812,6 @@ func (h *UsageHandler) GetMyAPIKeyDailyUsage(c *gin.Context) {
 	})
 }
 
-
 // PublicTodayStats handles public homepage usage counters.
 // GET /api/v1/public/usage/today
 func (h *UsageHandler) PublicTodayStats(c *gin.Context) {

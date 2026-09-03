@@ -689,7 +689,6 @@ func isWeChatBrowser(c *gin.Context) bool {
 	return strings.Contains(strings.ToLower(c.GetHeader("User-Agent")), "micromessenger")
 }
 
-
 // GetChannels returns the list of available payment channels.
 // GET /api/v1/payment/channels
 func (h *PaymentHandler) GetChannels(c *gin.Context) {

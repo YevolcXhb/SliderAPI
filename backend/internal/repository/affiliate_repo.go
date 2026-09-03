@@ -1220,7 +1220,6 @@ func scanInt64(ctx context.Context, client affiliateQueryExecer, query string, a
 	return v, nil
 }
 
-
 // AdminExtendInviteRewards extends active invite reward windows.
 func (r *affiliateRepository) AdminExtendInviteRewards(ctx context.Context, req service.AffiliateInviteRewardExtensionRequest) (*service.AffiliateInviteRewardExtensionResult, error) {
 	var (

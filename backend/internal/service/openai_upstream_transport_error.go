@@ -203,4 +203,4 @@ func (s *OpenAIGatewayService) tempUnscheduleOpenAITransportError(ctx context.Co
 	)
 }
 
-const openAITransportErrorUpdateTimeout       = 5 * time.Second
+const openAITransportErrorUpdateTimeout = 5 * time.Second

@@ -171,11 +171,11 @@ type ContentModerationConfig struct {
 	// CyberPolicyExcludeFromBanCount 为 true 时，cyber_policy 命中不参与自动封号计数：
 	// 当次不判定封号，且历史 cyber 行在 CountFlaggedByUserSince 中被排除。
 	// 默认 false（计入，与历史行为一致；旧配置 JSON 无此字段时反序列化为 false）。
-	CyberPolicyExcludeFromBanCount bool `json:"cyber_policy_exclude_from_ban_count"`
-	ModerationProvider   string                       `json:"moderation_provider"`
-	AliyunRegionID       string                       `json:"aliyun_region_id"`
-	AliyunEndpoint       string                       `json:"aliyun_endpoint"`
-	AliyunService        string                       `json:"aliyun_service"`
+	CyberPolicyExcludeFromBanCount bool   `json:"cyber_policy_exclude_from_ban_count"`
+	ModerationProvider             string `json:"moderation_provider"`
+	AliyunRegionID                 string `json:"aliyun_region_id"`
+	AliyunEndpoint                 string `json:"aliyun_endpoint"`
+	AliyunService                  string `json:"aliyun_service"`
 }
 
 type ContentModerationConfigView struct {
@@ -3108,12 +3108,12 @@ func (s *ContentModerationService) sendCyberPolicyEmail(ctx context.Context, log
 	return s.emailService.SendEmail(ctx, log.UserEmail, subject, buildCyberPolicyNoticeEmailBody(siteName, log))
 }
 
-const ContentModerationProviderOpenAI          = "openai"
+const ContentModerationProviderOpenAI = "openai"
 
 const ContentModerationProviderAliyunGuardrail = "aliyun_guardrails"
 
-const defaultAliyunGuardrailRegionID    = "cn-shanghai"
+const defaultAliyunGuardrailRegionID = "cn-shanghai"
 
-const defaultAliyunGuardrailEndpoint    = "green-cip.cn-shanghai.aliyuncs.com"
+const defaultAliyunGuardrailEndpoint = "green-cip.cn-shanghai.aliyuncs.com"
 
-const defaultAliyunGuardrailService     = "query_security_check_cb"
+const defaultAliyunGuardrailService = "query_security_check_cb"

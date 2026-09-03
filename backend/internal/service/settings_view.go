@@ -307,21 +307,21 @@ type SystemSettings struct {
 	AccountSchedulingThresholds map[string]int `json:"account_scheduling_thresholds"`
 
 	// 允许终端用户在用量页查看自己的失败请求
-	AllowUserViewErrorRequests bool
-	HomeStatsGroupID            int64
-	UserPrivateGroupDailyLimitUSD   *float64
-	UserPrivateGroupWeeklyLimitUSD  *float64
-	UserPrivateGroupMonthlyLimitUSD *float64
-	UserPrivateGroupRateMultiplier  float64
-	UserPrivateGroupRPMLimit        int
-	UserPrivateGroupCommissionRate  float64
-	AutoModelSettings AutoModelSettings `json:"auto_model_settings"`
-	FreeModelsEnabled bool `json:"free_models_enabled"`
-	CarpoolEnabled           bool    `json:"carpool_enabled"`
-	CarpoolBaseServiceFeeUSD float64 `json:"carpool_base_service_fee_usd"`
-	CarpoolSystemProxyFeeUSD float64 `json:"carpool_system_proxy_fee_usd"`
-	CarpoolRiskControlFeeUSD float64 `json:"carpool_risk_control_fee_usd"`
-	OpenAIImagesResponsesReasoningEffort string // OpenAI OAuth image bridge reasoning.effort
+	AllowUserViewErrorRequests                bool
+	HomeStatsGroupID                          int64
+	UserPrivateGroupDailyLimitUSD             *float64
+	UserPrivateGroupWeeklyLimitUSD            *float64
+	UserPrivateGroupMonthlyLimitUSD           *float64
+	UserPrivateGroupRateMultiplier            float64
+	UserPrivateGroupRPMLimit                  int
+	UserPrivateGroupCommissionRate            float64
+	AutoModelSettings                         AutoModelSettings `json:"auto_model_settings"`
+	FreeModelsEnabled                         bool              `json:"free_models_enabled"`
+	CarpoolEnabled                            bool              `json:"carpool_enabled"`
+	CarpoolBaseServiceFeeUSD                  float64           `json:"carpool_base_service_fee_usd"`
+	CarpoolSystemProxyFeeUSD                  float64           `json:"carpool_system_proxy_fee_usd"`
+	CarpoolRiskControlFeeUSD                  float64           `json:"carpool_risk_control_fee_usd"`
+	OpenAIImagesResponsesReasoningEffort      string            // OpenAI OAuth image bridge reasoning.effort
 	OpenAIFreeAccountRepairEnabled            bool
 	OpenAIFreeAccountRepairWeeklyThresholdUSD float64
 }

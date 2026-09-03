@@ -6,7 +6,8 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 
-	"io")
+	"io"
+)
 
 const (
 	UsageCleanupStatusPending   = "pending"
@@ -42,18 +43,18 @@ type UsageCleanupFilters struct {
 // UsageCleanupTask 表示使用记录清理任务
 // 状态包含 pending/running/succeeded/failed/canceled
 type UsageCleanupTask struct {
-	ID          int64
-	Status      string
-	Filters     UsageCleanupFilters
-	CreatedBy   int64
-	DeletedRows int64
-	ErrorMsg    *string
-	CanceledBy  *int64
-	CanceledAt  *time.Time
-	StartedAt   *time.Time
-	FinishedAt  *time.Time
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID            int64
+	Status        string
+	Filters       UsageCleanupFilters
+	CreatedBy     int64
+	DeletedRows   int64
+	ErrorMsg      *string
+	CanceledBy    *int64
+	CanceledAt    *time.Time
+	StartedAt     *time.Time
+	FinishedAt    *time.Time
+	CreatedAt     time.Time
+	UpdatedAt     time.Time
 	CreatedSource string
 }
 
@@ -81,6 +82,6 @@ type UsageCleanupRepository interface {
 
 const UsageCleanupSystemActor int64 = 0
 
-const UsageCleanupCreatedSourceAdmin         = "admin"
+const UsageCleanupCreatedSourceAdmin = "admin"
 
 const UsageCleanupCreatedSourceAutoRetention = "system_auto_retention"

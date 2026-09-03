@@ -309,7 +309,7 @@ type APIKeyService struct {
 	authInvalidationFailures  atomic.Uint64
 	lastUsedTouchL1           sync.Map // keyID -> nextAllowedAt(time.Time)
 	lastUsedTouchSF           singleflight.Group
-	settingService        *SettingService
+	settingService            *SettingService
 }
 
 type APIKeyAuthLookupMetrics struct {
@@ -1276,6 +1276,6 @@ func (s *APIKeyService) validateAPIKeyGroupRoutes(ctx context.Context, user *Use
 	return nil
 }
 
-var ErrAPIKeyGroupRequired     = infraerrors.BadRequest("API_KEY_GROUP_REQUIRED", "api key group is required when ungrouped key scheduling is disabled")
+var ErrAPIKeyGroupRequired = infraerrors.BadRequest("API_KEY_GROUP_REQUIRED", "api key group is required when ungrouped key scheduling is disabled")
 
 var ErrAPIKeyGroupRouteInvalid = infraerrors.BadRequest("API_KEY_GROUP_ROUTE_INVALID", "invalid api key group route")

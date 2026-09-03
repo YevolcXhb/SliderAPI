@@ -971,7 +971,6 @@ func (h *UserHandler) ResetUserPlatformQuotaWindow(c *gin.Context) {
 	response.Success(c, map[string]any{"platform_quotas": out})
 }
 
-
 // UpdatePointsRequest is the body for POST /api/v1/admin/users/:id/points.
 type UpdatePointsRequest struct {
 	Points    float64 `json:"points" binding:"required,gt=0"`
@@ -1012,7 +1011,6 @@ func (h *UserHandler) UpdatePoints(c *gin.Context) {
 		return dto.UserFromServiceAdmin(user), nil
 	})
 }
-
 
 // currentAdminUserID returns the authenticated admin user id from context.
 func currentAdminUserID(c *gin.Context) (int64, bool) {

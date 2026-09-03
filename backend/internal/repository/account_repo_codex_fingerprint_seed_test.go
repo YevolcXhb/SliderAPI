@@ -75,7 +75,7 @@ func TestBulkUpdateCodexFingerprintSeedRollsBackWhenUpdateFails(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 
 	mock.ExpectBegin()
-	mock.ExpectExec(`(?s)UPDATE accounts SET extra = .*JSON_QUOTE\(UUID\(\)\).*` + regexp.QuoteMeta("WHERE id IN (?, ?)")).
+	mock.ExpectExec(`(?s)UPDATE accounts SET extra = .*JSON_QUOTE\(UUID\(\)\).*`+regexp.QuoteMeta("WHERE id IN (?, ?)")).
 		WithArgs(sqlmock.AnyArg(), int64(27), int64(28)).
 		WillReturnError(errors.New("update failed"))
 	mock.ExpectRollback()
@@ -101,7 +101,7 @@ func TestBulkUpdateCodexFingerprintSeedRollsBackWhenOutboxFails(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 
 	mock.ExpectBegin()
-	mock.ExpectExec(`(?s)UPDATE accounts SET extra = .*JSON_QUOTE\(UUID\(\)\).*` + regexp.QuoteMeta("WHERE id IN (?, ?)")).
+	mock.ExpectExec(`(?s)UPDATE accounts SET extra = .*JSON_QUOTE\(UUID\(\)\).*`+regexp.QuoteMeta("WHERE id IN (?, ?)")).
 		WithArgs(sqlmock.AnyArg(), int64(27), int64(28)).
 		WillReturnResult(sqlmock.NewResult(0, 2))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).

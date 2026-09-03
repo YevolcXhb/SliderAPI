@@ -12,9 +12,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
-	"github.com/Wei-Shaw/sub2api/internal/config"
 )
 
 // passCharOpenAIAccount 返回 OpenAI API Key 自动透传账号夹具。

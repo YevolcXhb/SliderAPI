@@ -14,7 +14,8 @@ import (
 	"strings"
 	"sync"
 
-	"errors")
+	"errors"
+)
 
 // AdminService interface defines admin management operations
 type AdminService interface {

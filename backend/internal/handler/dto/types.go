@@ -150,9 +150,9 @@ type Group struct {
 	RequirePrivacySet bool `json:"require_privacy_set"`
 
 	// RPMLimit 分组级每分钟请求数上限（0 = 不限制），设置后覆盖用户级 rpm_limit。
-	RPMLimit int `json:"rpm_limit"`
-	OwnerUserID    *int64 `json:"owner_user_id,omitempty"`
-	Scope          string `json:"scope,omitempty"`
+	RPMLimit    int    `json:"rpm_limit"`
+	OwnerUserID *int64 `json:"owner_user_id,omitempty"`
+	Scope       string `json:"scope,omitempty"`
 	// MaxReasoningEffort OpenAI/Codex 请求的推理强度上限，空字符串表示不限制。
 	MaxReasoningEffort string `json:"max_reasoning_effort"`
 	// ReasoningEffortMappings OpenAI/Codex 推理强度精确映射。

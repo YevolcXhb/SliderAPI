@@ -777,7 +777,6 @@ func parseOpsDuration(v string) (time.Duration, bool) {
 	}
 }
 
-
 // opsRetryRequest is the retry request body for legacy/upstream retry endpoints.
 type opsRetryRequest struct {
 	Mode            string `json:"mode"`

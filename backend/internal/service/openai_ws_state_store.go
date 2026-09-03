@@ -87,7 +87,7 @@ type defaultOpenAIWSStateStore struct {
 	sessionToConnMu      sync.RWMutex
 	sessionToConn        map[string]openAIWSSessionConnBinding
 
-	lastCleanupUnixNano atomic.Int64
+	lastCleanupUnixNano       atomic.Int64
 	sessionToLatestResponseMu sync.RWMutex
 	sessionToLatestResponse   map[string]openAIWSStringBinding
 	responseToSessionMu       sync.RWMutex
@@ -695,7 +695,7 @@ func openAIWSSessionLatestResponseCacheKey(sessionHash string) string {
 
 const openAIWSResponseSessionCachePrefix = "openai:response_session:"
 
-const openAIWSSessionLatestCachePrefix   = "openai:session_latest_response:"
+const openAIWSSessionLatestCachePrefix = "openai:session_latest_response:"
 
 type openAIWSStringBinding struct {
 	value     string

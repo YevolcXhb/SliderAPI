@@ -71,21 +71,21 @@ type JWTClaims struct {
 
 // AuthService 认证服务
 type AuthService struct {
-	entClient             *dbent.Client
-	userRepo              UserRepository
-	redeemRepo            RedeemCodeRepository
-	refreshTokenCache     RefreshTokenCache
-	cfg                   *config.Config
-	settingService        *SettingService
-	emailService          *EmailService
-	turnstileService      *TurnstileService
-	tencentCaptchaService *TencentCaptchaService
-	aliyunCaptchaService  *AliyunCaptchaService
-	emailQueueService     *EmailQueueService
-	promoService          *PromoService
-	affiliateService      *AffiliateService
-	defaultSubAssigner    DefaultSubscriptionAssigner
-	userPlatformQuotaRepo UserPlatformQuotaRepository
+	entClient               *dbent.Client
+	userRepo                UserRepository
+	redeemRepo              RedeemCodeRepository
+	refreshTokenCache       RefreshTokenCache
+	cfg                     *config.Config
+	settingService          *SettingService
+	emailService            *EmailService
+	turnstileService        *TurnstileService
+	tencentCaptchaService   *TencentCaptchaService
+	aliyunCaptchaService    *AliyunCaptchaService
+	emailQueueService       *EmailQueueService
+	promoService            *PromoService
+	affiliateService        *AffiliateService
+	defaultSubAssigner      DefaultSubscriptionAssigner
+	userPlatformQuotaRepo   UserPlatformQuotaRepository
 	privateGroupProvisioner UserPrivateGroupProvisioner
 }
 

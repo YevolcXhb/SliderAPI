@@ -1,4 +1,4 @@
-﻿//go:build unit
+//go:build unit
 
 // Phase-0 TASK-002 特征化测试：gemini/antigravity 路径流式/非流式透传（INVARIANTS I-1.6）。
 // ForwardGemini 的外部可观测语义：
@@ -16,9 +16,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
-	"github.com/Wei-Shaw/sub2api/internal/config"
 )
 
 // passCharAntigravityService 构造最小可运行的 AntigravityGatewayService。

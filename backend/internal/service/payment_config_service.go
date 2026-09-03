@@ -82,8 +82,8 @@ type PaymentConfig struct {
 	// Force Alipay mobile users to use QR code instead of mobile redirect
 	AlipayForceQRCode bool `json:"alipay_force_qrcode"`
 	// Use Alipay face-to-face precreate and an app deep link on mobile clients.
-	AlipayMobilePrecreateDeepLink bool `json:"alipay_mobile_precreate_deep_link"`
-	ReceiptCodeOSS ReceiptCodeOSSConfig `json:"receipt_code_oss"`
+	AlipayMobilePrecreateDeepLink bool                 `json:"alipay_mobile_precreate_deep_link"`
+	ReceiptCodeOSS                ReceiptCodeOSSConfig `json:"receipt_code_oss"`
 }
 
 // UpdatePaymentConfigRequest contains fields to update payment configuration.
@@ -117,10 +117,10 @@ type UpdatePaymentConfigRequest struct {
 	// Use Alipay face-to-face precreate and an app deep link on mobile clients.
 	AlipayMobilePrecreateDeepLink *bool `json:"alipay_mobile_precreate_deep_link"`
 
-	VisibleMethodAlipaySource  *string `json:"payment_visible_method_alipay_source"`
-	VisibleMethodWxpaySource   *string `json:"payment_visible_method_wxpay_source"`
-	VisibleMethodAlipayEnabled *bool   `json:"payment_visible_method_alipay_enabled"`
-	VisibleMethodWxpayEnabled  *bool   `json:"payment_visible_method_wxpay_enabled"`
+	VisibleMethodAlipaySource          *string `json:"payment_visible_method_alipay_source"`
+	VisibleMethodWxpaySource           *string `json:"payment_visible_method_wxpay_source"`
+	VisibleMethodAlipayEnabled         *bool   `json:"payment_visible_method_alipay_enabled"`
+	VisibleMethodWxpayEnabled          *bool   `json:"payment_visible_method_wxpay_enabled"`
 	ReceiptCodeOSSEnabled              *bool   `json:"payment_receipt_code_oss_enabled"`
 	ReceiptCodeOSSEndpoint             *string `json:"payment_receipt_code_oss_endpoint"`
 	ReceiptCodeOSSRegion               *string `json:"payment_receipt_code_oss_region"`
@@ -850,33 +850,33 @@ func validateReceiptCodeOSSConfig(cfg config.ReceiptCodeStorageConfig) error {
 	return nil
 }
 
-const SettingPaymentReceiptCodeOSSEnabled              = "payment_receipt_code_oss_enabled"
+const SettingPaymentReceiptCodeOSSEnabled = "payment_receipt_code_oss_enabled"
 
-const SettingPaymentReceiptCodeOSSEndpoint             = "payment_receipt_code_oss_endpoint"
+const SettingPaymentReceiptCodeOSSEndpoint = "payment_receipt_code_oss_endpoint"
 
-const SettingPaymentReceiptCodeOSSRegion               = "payment_receipt_code_oss_region"
+const SettingPaymentReceiptCodeOSSRegion = "payment_receipt_code_oss_region"
 
-const SettingPaymentReceiptCodeOSSBucket               = "payment_receipt_code_oss_bucket"
+const SettingPaymentReceiptCodeOSSBucket = "payment_receipt_code_oss_bucket"
 
-const SettingPaymentReceiptCodeOSSAccessKeyID          = "payment_receipt_code_oss_access_key_id"
+const SettingPaymentReceiptCodeOSSAccessKeyID = "payment_receipt_code_oss_access_key_id"
 
-const SettingPaymentReceiptCodeOSSSecretAccessKey      = "payment_receipt_code_oss_secret_access_key"
+const SettingPaymentReceiptCodeOSSSecretAccessKey = "payment_receipt_code_oss_secret_access_key"
 
-const SettingPaymentReceiptCodeOSSPrefix               = "payment_receipt_code_oss_prefix"
+const SettingPaymentReceiptCodeOSSPrefix = "payment_receipt_code_oss_prefix"
 
-const SettingPaymentReceiptCodeOSSPublicBaseURL        = "payment_receipt_code_oss_public_base_url"
+const SettingPaymentReceiptCodeOSSPublicBaseURL = "payment_receipt_code_oss_public_base_url"
 
-const SettingPaymentReceiptCodeOSSForcePathStyle       = "payment_receipt_code_oss_force_path_style"
+const SettingPaymentReceiptCodeOSSForcePathStyle = "payment_receipt_code_oss_force_path_style"
 
-const SettingPaymentReceiptCodeOSSMaxSizeBytes         = "payment_receipt_code_oss_max_size_bytes"
+const SettingPaymentReceiptCodeOSSMaxSizeBytes = "payment_receipt_code_oss_max_size_bytes"
 
 const SettingPaymentReceiptCodeOSSPresignExpireSeconds = "payment_receipt_code_oss_presign_expire_seconds"
 
-const defaultReceiptCodeOSSRegion               = "oss-cn-hangzhou"
+const defaultReceiptCodeOSSRegion = "oss-cn-hangzhou"
 
-const defaultReceiptCodeOSSPrefix               = "receipt-codes/"
+const defaultReceiptCodeOSSPrefix = "receipt-codes/"
 
-const defaultReceiptCodeOSSMaxSizeBytes         = int64(1024 * 1024)
+const defaultReceiptCodeOSSMaxSizeBytes = int64(1024 * 1024)
 
 const defaultReceiptCodeOSSPresignExpireSeconds = 300
 
@@ -894,7 +894,6 @@ type ReceiptCodeOSSConfig struct {
 	MaxSizeBytes              int64  `json:"max_size_bytes"`
 	PresignExpireSeconds      int    `json:"presign_expire_seconds"`
 }
-
 
 func (s *PaymentConfigService) encryptReceiptCodeOSSSecret(secret string) (string, error) {
 	secret = strings.TrimSpace(secret)

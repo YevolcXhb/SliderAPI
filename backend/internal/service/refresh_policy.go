@@ -105,6 +105,3 @@ func (p BackgroundRefreshPolicy) handleAlreadyRefreshed() error {
 	}
 	return errRefreshSkipped
 }
-
-
-

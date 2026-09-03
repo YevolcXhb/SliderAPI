@@ -638,5 +638,3 @@ func (s *AntigravityGatewayService) unwrapV1InternalResponse(body []byte) ([]byt
 	}
 	return body, nil
 }
-
-

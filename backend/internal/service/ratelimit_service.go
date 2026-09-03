@@ -2795,7 +2795,4 @@ func (s *RateLimitService) triggerStreamTimeoutError(ctx context.Context, accoun
 
 const TokenRefreshTempUnschedDuration = 10 * time.Minute
 
-const openAIModelCapacityCooldown     = time.Minute
-
-
-
+const openAIModelCapacityCooldown = time.Minute

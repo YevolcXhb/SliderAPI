@@ -127,13 +127,13 @@ type Group struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 
-	AccountGroups           []AccountGroup
-	AccountCount            int64
-	ActiveAccountCount      int64
-	RateLimitedAccountCount int64
-	OwnerUserID    *int64
-	Scope          string
-	RequiredAccountLevel string
+	AccountGroups               []AccountGroup
+	AccountCount                int64
+	ActiveAccountCount          int64
+	RateLimitedAccountCount     int64
+	OwnerUserID                 *int64
+	Scope                       string
+	RequiredAccountLevel        string
 	KiroCacheEmulationEnabled   bool
 	KiroAutoStickyEnabled       bool
 	KiroStickySessionTTLSeconds int
@@ -651,7 +651,7 @@ func normalizeKiroEndpointModeField(g *Group) {
 	}
 }
 
-const KiroEndpointModeQ   = "q"
+const KiroEndpointModeQ = "q"
 
 const KiroEndpointModeKRS = "krs"
 

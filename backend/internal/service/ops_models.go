@@ -98,8 +98,8 @@ type OpsErrorLogDetail struct {
 	IsBusinessLimited bool `json:"is_business_limited"`
 
 	// Bound (non-deleted) key prefix, snapshotted at error time.
-	APIKeyPrefix string `json:"api_key_prefix,omitempty"`
-	UserAgent string `json:"user_agent"`
+	APIKeyPrefix         string `json:"api_key_prefix,omitempty"`
+	UserAgent            string `json:"user_agent"`
 	RequestBody          string `json:"request_body"`
 	RequestBodyTruncated bool   `json:"request_body_truncated"`
 	RequestBodyBytes     *int   `json:"request_body_bytes"`

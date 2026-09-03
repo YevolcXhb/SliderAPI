@@ -456,7 +456,6 @@ func findSetCookieValue(cookies []*http.Cookie, name string) string {
 	return ""
 }
 
-
 func (r *oauthEmailAffiliateRepoStub) AdminExtendInviteRewards(_ context.Context, _ service.AffiliateInviteRewardExtensionRequest) (*service.AffiliateInviteRewardExtensionResult, error) {
 	return &service.AffiliateInviteRewardExtensionResult{}, nil
 }

@@ -1061,7 +1061,6 @@ func TestExecuteSubscriptionFulfillmentDoesNotDuplicateWorkAfterLegacySuccessAud
 var _ AffiliateRepository = (*paymentFulfillmentAffiliateRepoStub)(nil)
 var _ SettingRepository = (*paymentFulfillmentSettingRepoStub)(nil)
 
-
 func (r *paymentFulfillmentAffiliateRepoStub) AdminExtendInviteRewards(_ context.Context, _ AffiliateInviteRewardExtensionRequest) (*AffiliateInviteRewardExtensionResult, error) {
 	return &AffiliateInviteRewardExtensionResult{}, nil
 }

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"entgo.io/ent/dialect"
+	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
@@ -808,7 +808,6 @@ func (s *PaymentService) RetryFulfillment(ctx context.Context, oid int64) error 
 	s.writeAuditLog(ctx, oid, "RECHARGE_RETRY", "admin", map[string]any{"detail": "admin manual retry"})
 	return s.executeFulfillment(ctx, oid)
 }
-
 
 func validateManualPaidAmount(amount float64) error {
 	if amount <= 0 || math.IsNaN(amount) || math.IsInf(amount, 0) {

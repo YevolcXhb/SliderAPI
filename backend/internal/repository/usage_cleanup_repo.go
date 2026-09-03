@@ -14,7 +14,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
-	"io")
+	"io"
+)
 
 type usageCleanupRepository struct {
 	client *dbent.Client
@@ -253,7 +254,6 @@ func (r *usageCleanupRepository) CancelTask(ctx context.Context, taskID int64, c
 	}
 	return affected > 0, nil
 }
-
 
 func (r *usageCleanupRepository) MarkTaskSucceeded(ctx context.Context, taskID int64, deletedRows int64) error {
 	if r.client != nil {

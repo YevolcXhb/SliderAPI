@@ -53,7 +53,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "open: %v\n", err)
 		os.Exit(2)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -94,7 +94,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "tables: %v\n", err)
 		os.Exit(2)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var name string
 		var rowCount sql.NullInt64

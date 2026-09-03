@@ -445,4 +445,3 @@ func isOllamaParserContainer(tag string) bool {
 		return false
 	}
 }
-

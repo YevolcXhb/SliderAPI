@@ -492,7 +492,6 @@ ON DUPLICATE KEY UPDATE
 	return err
 }
 
-
 func (r *opsRepository) GetLatestHourlyBucketStart(ctx context.Context) (time.Time, bool, error) {
 	if r == nil || r.db == nil {
 		return time.Time{}, false, fmt.Errorf("nil ops repository")

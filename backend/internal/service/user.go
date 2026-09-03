@@ -64,15 +64,15 @@ type User struct {
 	// 避免每请求查 DB。字段不持久化到数据库。
 	UserGroupRPMOverride *int
 
-	APIKeys       []APIKey
-	Subscriptions []UserSubscription
+	APIKeys             []APIKey
+	Subscriptions       []UserSubscription
 	RechargeBalance     float64
 	InviteIncomeBalance float64
 	ShareIncomeBalance  float64
 	PointsBalance       float64
 	PreferPointsBilling bool
-	TotalInviteIncome          float64
-	TotalShareIncome           float64
+	TotalInviteIncome   float64
+	TotalShareIncome    float64
 }
 
 func (u *User) IsAdmin() bool {

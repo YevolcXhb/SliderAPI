@@ -708,7 +708,6 @@ func extractResponsePreview(w *limitedResponseWriter) (preview string, truncated
 	return string(b), w.truncated()
 }
 
-
 func (s *OpsService) isFailoverError(message string) bool {
 	msg := strings.ToLower(strings.TrimSpace(message))
 	if msg == "" {

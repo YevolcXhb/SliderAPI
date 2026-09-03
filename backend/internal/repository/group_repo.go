@@ -1135,7 +1135,6 @@ func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []servic
 	return nil
 }
 
-
 // ListActiveVisibleToUser lists active groups visible to a user: public
 // standard groups, plus the user's own private/carpool groups and any
 // subscribed public groups.

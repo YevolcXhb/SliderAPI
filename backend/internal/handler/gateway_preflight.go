@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"github.com/Wei-Shaw/sub2api/internal/gatewayhook"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // ProvideGatewayHookChain 装配网关 pre-flight 钩子链（Wire 注入的核心钩子；

@@ -723,12 +723,12 @@ func (s *RevenueService) fillRevenueCashStats(ctx context.Context, params Revenu
 		ORDER BY bucket
 	`, bucketPaid, trendUserFilter, bucketRefund, trendUserFilter)
 	trendArgs := []any{
-		params.Timezone, // paid bucket expression
+		params.Timezone,                  // paid bucket expression
 		params.StartTime, params.EndTime, // paid subquery
 	}
 	trendArgs = append(trendArgs, trendUserArgs...) // paid subquery user filter
 	trendArgs = append(trendArgs,
-		params.Timezone, // refund bucket expression
+		params.Timezone,                  // refund bucket expression
 		params.StartTime, params.EndTime, // refund subquery
 	)
 	trendArgs = append(trendArgs, trendUserArgs...) // refund subquery user filter
@@ -2070,4 +2070,3 @@ func (s *RevenueService) queryRevenueShareOwnerBreakdownFromSnapshots(ctx contex
 	}
 	return items, nil
 }
-

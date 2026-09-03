@@ -371,9 +371,9 @@ type channelMonitorV2ErrorCategoryKey struct {
 }
 
 type channelMonitorV2ErrorMetricAgg struct {
-	errorRequests          int64
-	upstreamAffected       int64
-	upstreamAttemptCount   int64
+	errorRequests        int64
+	upstreamAffected     int64
+	upstreamAttemptCount int64
 }
 
 // aggregateChannelMonitorV2Errors deduplicates and classifies error logs, then
@@ -390,7 +390,7 @@ func (r *channelMonitorV2Repository) aggregateChannelMonitorV2Errors(ctx context
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	metricAggs := make(map[channelMonitorV2ErrorMetricKey]*channelMonitorV2ErrorMetricAgg)
 	userCounts := make(map[channelMonitorV2ErrorUserKey]int64)
@@ -470,7 +470,7 @@ func insertChannelMonitorV2ErrorMetrics(ctx context.Context, tx *sql.Tx, aggs ma
 
 func insertChannelMonitorV2ErrorUserMetrics(ctx context.Context, tx *sql.Tx, counts map[channelMonitorV2ErrorUserKey]int64) error {
 	type row struct {
-		key          channelMonitorV2ErrorUserKey
+		key           channelMonitorV2ErrorUserKey
 		errorRequests int64
 	}
 	rows := make([]row, 0, len(counts))
@@ -498,7 +498,7 @@ func insertChannelMonitorV2ErrorUserMetrics(ctx context.Context, tx *sql.Tx, cou
 
 func insertChannelMonitorV2ErrorCategories(ctx context.Context, tx *sql.Tx, counts map[channelMonitorV2ErrorCategoryKey]int64) error {
 	type row struct {
-		key          channelMonitorV2ErrorCategoryKey
+		key           channelMonitorV2ErrorCategoryKey
 		errorRequests int64
 	}
 	rows := make([]row, 0, len(counts))
@@ -677,4 +677,3 @@ SELECT FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(e.bucket_start) / ?) * ?), ?,
 FROM channel_monitor_v2_error_metrics_1m e
 WHERE e.bucket_start >= ? AND e.bucket_start < ?
 GROUP BY 1, 2, 3, 4, 5, 6, 7`
-

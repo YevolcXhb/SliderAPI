@@ -625,10 +625,9 @@ func normalizeAffiliateRecordFilter(filter AffiliateRecordFilter) AffiliateRecor
 	return filter
 }
 
-const AffiliateInviteRewardExtensionScopeSite    = "site"
+const AffiliateInviteRewardExtensionScopeSite = "site"
 
 const AffiliateInviteRewardExtensionScopeInviter = "inviter"
-
 
 // AffiliateInviteRewardExtensionRequest describes an admin bulk extension of
 // invite reward windows.

@@ -27,7 +27,8 @@ import (
 	"github.com/tidwall/gjson"
 	"go.uber.org/zap"
 
-	"github.com/Wei-Shaw/sub2api/internal/gatewayhook")
+	"github.com/Wei-Shaw/sub2api/internal/gatewayhook"
+)
 
 // OpenAIGatewayHandler handles OpenAI API gateway requests
 type OpenAIGatewayHandler struct {
@@ -44,7 +45,7 @@ type OpenAIGatewayHandler struct {
 	imageLimiter               *imageConcurrencyLimiter
 	maxAccountSwitches         int
 	cfg                        *config.Config
-	preFlightHooks *gatewayhook.Chain
+	preFlightHooks             *gatewayhook.Chain
 }
 
 type openAIWSTurnChannelMappingSnapshot struct {

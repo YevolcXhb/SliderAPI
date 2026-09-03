@@ -37,10 +37,10 @@ type UsageCleanupService struct {
 
 	workerCtx    context.Context
 	workerCancel context.CancelFunc
-	backup      usageCleanupBackupCreator
-	settingRepo SettingRepository
-	autoRunning int32
-	lastAutoRun atomic.Value // time.Time
+	backup       usageCleanupBackupCreator
+	settingRepo  SettingRepository
+	autoRunning  int32
+	lastAutoRun  atomic.Value // time.Time
 }
 
 func NewUsageCleanupService(repo UsageCleanupRepository, timingWheel *TimingWheelService, dashboard *DashboardAggregationService, cfg *config.Config) *UsageCleanupService {

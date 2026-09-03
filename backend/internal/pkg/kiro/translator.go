@@ -23,9 +23,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/anthropictokenizer"
 	"github.com/google/uuid"
 	"github.com/tidwall/gjson"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/anthropictokenizer"
 )
 
 const (

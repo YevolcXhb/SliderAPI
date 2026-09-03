@@ -1476,4 +1476,4 @@ func validatePersonalUserConcurrency(concurrency int) error {
 	return nil
 }
 
-var ErrUserConcurrencyRange     = infraerrors.BadRequest("USER_CONCURRENCY_INVALID", fmt.Sprintf("user concurrency must be at least %d", UserMinConcurrency))
+var ErrUserConcurrencyRange = infraerrors.BadRequest("USER_CONCURRENCY_INVALID", fmt.Sprintf("user concurrency must be at least %d", UserMinConcurrency))

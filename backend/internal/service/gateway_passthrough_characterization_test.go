@@ -18,10 +18,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/require"
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/model"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
 )
 
 // passCharSplitSSEEvents 按 SSE 事件边界（空行 "\n\n"）分帧。

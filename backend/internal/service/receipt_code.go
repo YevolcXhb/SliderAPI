@@ -19,10 +19,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
-	"golang.org/x/image/webp"
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/google/uuid"
+	"golang.org/x/image/webp"
 )
 
 const (

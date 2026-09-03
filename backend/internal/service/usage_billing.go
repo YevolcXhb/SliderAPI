@@ -39,25 +39,25 @@ type UsageBillingCommand struct {
 	ImageCount          int
 	MediaType           string
 
-	BalanceCost         float64
-	SubscriptionCost    float64
-	APIKeyQuotaCost     float64
-	APIKeyRateLimitCost float64
-	AccountQuotaCost    float64
-	GroupID             *int64
+	BalanceCost                float64
+	SubscriptionCost           float64
+	APIKeyQuotaCost            float64
+	APIKeyRateLimitCost        float64
+	AccountQuotaCost           float64
+	GroupID                    *int64
 	PreferPointsBilling        bool
 	PrivateGroupCommissionCost float64
-	ShareSnapshotCaptured bool
-	ShareOwnerUserID      *int64
-	ShareModeSnapshot     string
-	ShareStatusSnapshot   string
-	SharePlatform         string
-	SharePolicyID         *int64
-	SharePolicyVersion    int
-	OwnerShareRatio       float64
-	InviteShareRatio      float64
-	UsageOccurredAt       time.Time
-	UsageLog *UsageLog
+	ShareSnapshotCaptured      bool
+	ShareOwnerUserID           *int64
+	ShareModeSnapshot          string
+	ShareStatusSnapshot        string
+	SharePlatform              string
+	SharePolicyID              *int64
+	SharePolicyVersion         int
+	OwnerShareRatio            float64
+	InviteShareRatio           float64
+	UsageOccurredAt            time.Time
+	UsageLog                   *UsageLog
 }
 
 func (c *UsageBillingCommand) Normalize() {

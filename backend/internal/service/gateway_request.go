@@ -301,9 +301,9 @@ type ParsedRequest struct {
 	// OnUpstreamAccepted 上游接受请求后立即调用（用于提前释放串行锁）
 	// 流式请求在收到 2xx 响应头后调用，避免持锁等流完成
 	OnUpstreamAccepted func()
-	BodySessionID   string          // body-provided stable session hint
-	ExplicitSessionID string
-	Group *Group
+	BodySessionID      string // body-provided stable session hint
+	ExplicitSessionID  string
+	Group              *Group
 }
 
 // NormalizeSessionUserAgent reduces UA noise for sticky-session and digest hashing.

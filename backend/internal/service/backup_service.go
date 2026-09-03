@@ -190,7 +190,7 @@ type BackupService struct {
 	bgCtx         context.Context    // 所有后台操作的 parent context
 	bgCancel      context.CancelFunc // 取消所有活跃后台操作
 	partSizeBytes int64              // 分卷阈值；生产使用 4 GiB，测试可注入更小值
-	usageCleanup config.UsageCleanupConfig
+	usageCleanup  config.UsageCleanupConfig
 }
 
 func NewBackupService(

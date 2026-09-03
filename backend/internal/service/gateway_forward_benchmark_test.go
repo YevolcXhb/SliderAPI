@@ -15,8 +15,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/gin-gonic/gin"
 )
 
 func benchFwdRun(b *testing.B, header http.Header, upstreamBody string, reqBody string, stream bool) {
