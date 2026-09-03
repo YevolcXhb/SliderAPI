@@ -4820,7 +4820,7 @@
                   :upload-label="t('admin.settings.site.uploadImage')"
                   :remove-label="t('admin.settings.site.remove')"
                   :hint="t('admin.settings.site.logoHint')"
-                  :max-size="300 * 1024"
+                  :max-size="20 * 1024 * 1024"
                 />
               </div>
 

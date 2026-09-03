@@ -400,7 +400,7 @@ func (r *apiKeyRepository) DeleteWithAudit(ctx context.Context, id int64) error 
 func (r *apiKeyRepository) deleteWithTombstone(ctx context.Context, exec *dbent.Client, id int64, tombstoneKey string) error {
 	res, err := exec.ExecContext(ctx, `
 		UPDATE api_keys
-		SET key = ?, deleted_at = NOW(), updated_at = NOW()
+		SET ` + "`key`" + ` = ?, deleted_at = NOW(), updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL`, tombstoneKey, id)
 	if err != nil {
 		return err
@@ -757,7 +757,7 @@ func (r *apiKeyRepository) IncrementQuotaUsedAndGetState(ctx context.Context, id
 		if _, err := tx.ExecContext(ctx, `UPDATE api_keys SET quota_used = quota_used + ?, status = CASE WHEN quota > 0 AND quota_used + ? >= quota THEN ? ELSE status END, updated_at = NOW() WHERE id = ? AND deleted_at IS NULL`, amount, amount, service.StatusAPIKeyQuotaExhausted, id); err != nil {
 			return err
 		}
-		return scanSingleRow(ctx, tx, `SELECT quota_used, quota, key, status FROM api_keys WHERE id = ? AND deleted_at IS NULL`, []any{id}, &state.QuotaUsed, &state.Quota, &state.Key, &state.Status)
+		return scanSingleRow(ctx, tx, "SELECT quota_used, quota, `key`, status FROM api_keys WHERE id = ? AND deleted_at IS NULL", []any{id}, &state.QuotaUsed, &state.Quota, &state.Key, &state.Status)
 	})
 	if err != nil {
 		if err == sql.ErrNoRows {

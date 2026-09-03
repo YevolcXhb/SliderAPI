@@ -169,6 +169,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	pluginManager := service.NewPluginManager(pluginRepository, secretEncryptor, configConfig, pluginHostInfo)
 	accountTestService := service.ProvideAccountTestService(accountRepository, geminiTokenProvider, claudeTokenProvider, grokTokenProvider, antigravityGatewayService, httpUpstream, configConfig, tlsFingerprintProfileService, openAIGatewayService, settingService, pluginManager)
 	kiroOAuthService := service.NewKiroOAuthService(proxyRepository)
+	accountTestService.SetKiroTokenRefresher(kiroOAuthService)
 	accountBatchTaskRepository := repository.NewAccountBatchTaskRepository(db)
 	accountBatchTaskService := service.ProvideAccountBatchTaskService(accountBatchTaskRepository, timingWheelService)
 	carpoolRepository := repository.NewCarpoolRepository(client, db)

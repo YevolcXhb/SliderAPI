@@ -3058,9 +3058,18 @@ const syncFormFromAccount = (newAccount: Account | null) => {
     // Load model mappings and detect mode
     const existingMappings = credentials.model_mapping as Record<string, string> | undefined
     if (newAccount.platform === 'kiro') {
-      modelRestrictionMode.value = 'mapping'
-      modelMappings.value = getKiroModelMappingsFromCredentials(credentials)
-      allowedModels.value = []
+      const kiroEntries =
+        existingMappings && typeof existingMappings === 'object' ? Object.entries(existingMappings) : []
+      const isKiroWhitelist = kiroEntries.length > 0 && kiroEntries.every(([from, to]) => from === to)
+      if (isKiroWhitelist) {
+        modelRestrictionMode.value = 'whitelist'
+        allowedModels.value = kiroEntries.map(([from]) => from)
+        modelMappings.value = []
+      } else {
+        modelRestrictionMode.value = 'mapping'
+        modelMappings.value = getKiroModelMappingsFromCredentials(credentials)
+        allowedModels.value = []
+      }
     } else if (existingMappings && typeof existingMappings === 'object') {
       const entries = Object.entries(existingMappings)
 
@@ -3191,9 +3200,19 @@ const syncFormFromAccount = (newAccount: Account | null) => {
     // Load model mappings for OAuth accounts with configurable model maps.
     if (newAccount.platform === 'kiro' && newAccount.credentials) {
       const oauthCredentials = newAccount.credentials as Record<string, unknown>
-      modelRestrictionMode.value = 'mapping'
-      modelMappings.value = getKiroModelMappingsFromCredentials(oauthCredentials)
-      allowedModels.value = []
+      const oauthMappings = oauthCredentials.model_mapping as Record<string, string> | undefined
+      const oauthEntries =
+        oauthMappings && typeof oauthMappings === 'object' ? Object.entries(oauthMappings) : []
+      const isKiroWhitelist = oauthEntries.length > 0 && oauthEntries.every(([from, to]) => from === to)
+      if (isKiroWhitelist) {
+        modelRestrictionMode.value = 'whitelist'
+        allowedModels.value = oauthEntries.map(([from]) => from)
+        modelMappings.value = []
+      } else {
+        modelRestrictionMode.value = 'mapping'
+        modelMappings.value = getKiroModelMappingsFromCredentials(oauthCredentials)
+        allowedModels.value = []
+      }
     } else if (newAccount.platform === 'openai' && newAccount.credentials) {
       const oauthCredentials = newAccount.credentials as Record<string, unknown>
       const existingMappings = oauthCredentials.model_mapping as Record<string, string> | undefined

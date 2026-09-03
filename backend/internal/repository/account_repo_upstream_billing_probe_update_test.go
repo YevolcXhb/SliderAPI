@@ -346,7 +346,7 @@ func TestUpdateCredentialsAtomicallyClearsProbeForOpenAIAPIKeyIdentityChange(t *
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`(?s)UPDATE accounts.*NOT \(credentials <=> \?\).*JSON_REMOVE\(COALESCE\(extra, JSON_OBJECT\(\)\), '\$.upstream_billing_probe'\)`).
-		WithArgs(`{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, int64(27)).
+		WithArgs(`{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, int64(27)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).
 		WithArgs(service.SchedulerOutboxEventAccountChanged, int64(27), nil, nil, sqlmock.AnyArg()).
@@ -436,7 +436,7 @@ func TestUpdateCredentialsRollsBackWhenOutboxFails(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`(?s)UPDATE accounts.*`+regexp.QuoteMeta("NOT (credentials <=> ?)")+`.*`+regexp.QuoteMeta("JSON_REMOVE(COALESCE(extra, JSON_OBJECT()), '$.upstream_billing_probe')")).
-		WithArgs(`{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, int64(27)).
+		WithArgs(`{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, int64(27)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).WillReturnError(errors.New("outbox failed"))
 	mock.ExpectRollback()

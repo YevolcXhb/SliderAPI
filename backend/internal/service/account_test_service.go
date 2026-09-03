@@ -157,6 +157,10 @@ type AccountTestService struct {
 	// grokWSDialer is optional; realtime account tests use the default OpenAI-style
 	// WS dialer when nil (supports proxy + coder/websocket handshake).
 	grokWSDialer openAIWSClientDialer
+
+	// kiroRefresher powers the Kiro OAuth connectivity test (token refresh on
+	// expiry / 401-403 retry). Injected via SetKiroTokenRefresher.
+	kiroRefresher kiroAccountTokenRefresher
 }
 
 func (s *AccountTestService) SetSettingService(settingService *SettingService) {
@@ -168,6 +172,14 @@ func (s *AccountTestService) SetSettingService(settingService *SettingService) {
 func (s *AccountTestService) SetPluginManager(pluginManager *PluginManager) {
 	if s != nil {
 		s.pluginManager = pluginManager
+	}
+}
+
+// SetKiroTokenRefresher wires the Kiro OAuth refresh flow used by the Kiro
+// OAuth connectivity test (nil disables refresh-on-expiry).
+func (s *AccountTestService) SetKiroTokenRefresher(refresher kiroAccountTokenRefresher) {
+	if s != nil {
+		s.kiroRefresher = refresher
 	}
 }
 
@@ -350,6 +362,11 @@ func (s *AccountTestService) testKiroAccountConnection(c *gin.Context, account *
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Unsupported Kiro account type: %s", account.Type))
 	}
 
+	// OAuth accounts use the fixed Kiro Runtime endpoint (no base_url required)
+	if account.Type == AccountTypeOAuth {
+		return s.testKiroOAuthRuntimeConnection(c, account, testModelID, prompt)
+	}
+
 	authToken := strings.TrimSpace(account.GetOpenAIApiKey())
 	if authToken == "" {
 		// OAuth ???? api_key?? access_token ??? chat completions ???
@@ -372,6 +389,157 @@ func (s *AccountTestService) testKiroAccountConnection(c *gin.Context, account *
 	}
 
 	return s.testOpenAIChatCompletionsConnection(c, account, testModelID, prompt, normalizedBaseURL, authToken)
+}
+
+// testKiroOAuthRuntimeConnection tests a Kiro OAuth account via the fixed
+// Kiro Runtime endpoint (AmazonQ generateAssistantResponse). OAuth accounts
+// do not require a user-configured base_url; they always use the regional
+// runtime gateway. Expired access tokens are refreshed via the Kiro OAuth
+// refresh flow before the probe, and a 401/403 response triggers one
+// forced-refresh retry. The AWS event-stream response is parsed back into
+// an Anthropic-style message and surfaced as test text.
+func (s *AccountTestService) testKiroOAuthRuntimeConnection(c *gin.Context, account *Account, testModelID string, prompt string) error {
+	ctx := c.Request.Context()
+
+	testPrompt := strings.TrimSpace(prompt)
+	if testPrompt == "" {
+		testPrompt = "hi"
+	}
+
+	authToken, err := s.ensureKiroOAuthAccessToken(ctx, account, false)
+	if err != nil {
+		return s.sendErrorAndEnd(c, err.Error())
+	}
+
+	anthropicBody, _ := json.Marshal(map[string]any{
+		"model":      testModelID,
+		"max_tokens": 64,
+		"messages": []map[string]any{
+			{"role": "user", "content": testPrompt},
+		},
+	})
+
+	// Translate the client-facing model ID to the upstream Kiro runtime ID
+	// (e.g. claude-sonnet-4-5-20250929 -> CLAUDE_SONNET_4_5_20250929_V1_0),
+	// mirroring the gateway forwarding path.
+	upstreamModel := resolveKiroUpstreamModel(testModelID)
+	buildResult, err := kiro.BuildKiroPayloadWithContext(anthropicBody, upstreamModel, resolveKiroPayloadProfileArn(account), "AI_EDITOR", nil)
+	if err != nil {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to build Kiro request: %s", err.Error()))
+	}
+
+	endpoints := buildKiroEndpoints(account, KiroEndpointModeQ)
+	if len(endpoints) == 0 {
+		return s.sendErrorAndEnd(c, "No Kiro endpoint available")
+	}
+	endpoint := endpoints[0]
+
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Connection", "keep-alive")
+	c.Writer.Header().Set("X-Accel-Buffering", "no")
+	c.Writer.Flush()
+
+	s.sendEvent(c, TestEvent{Type: "test_start", Model: testModelID})
+	s.sendEvent(c, TestEvent{Type: "status", Text: "Testing via Kiro Runtime"})
+
+	var resp *http.Response
+	for attempt := 0; ; attempt++ {
+		req, reqErr := newKiroJSONRequest(ctx, endpoint.URL, buildResult.Payload, authToken, buildKiroAccountKey(account), buildKiroMachineID(account), endpoint.AmzTarget, account)
+		if reqErr != nil {
+			return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to create Kiro request: %s", reqErr.Error()))
+		}
+		resp, err = s.httpUpstream.Do(req, kiroProxyURL(account), account.ID, account.Concurrency)
+		if err != nil {
+			return s.sendErrorAndEnd(c, fmt.Sprintf("Kiro Runtime request failed: %s", err.Error()))
+		}
+		if (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) && attempt == 0 && s.kiroRefresher != nil {
+			_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4<<20))
+			_ = resp.Body.Close()
+			next, refreshErr := s.ensureKiroOAuthAccessToken(ctx, account, true)
+			if refreshErr != nil {
+				return s.sendErrorAndEnd(c, fmt.Sprintf("Kiro token refresh failed: %s", refreshErr.Error()))
+			}
+			authToken = next
+			continue
+		}
+		break
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+		if (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) && s.accountRepo != nil {
+			_ = s.accountRepo.SetError(ctx, account.ID, fmt.Sprintf("Kiro Runtime authentication failed (%d): %s", resp.StatusCode, string(body)))
+		}
+		if resp.StatusCode == http.StatusBadRequest && strings.Contains(string(body), "INVALID_MODEL_ID") {
+			return s.sendErrorAndEnd(c, fmt.Sprintf(
+				"Kiro Runtime rejected model %q (INVALID_MODEL_ID). This model is likely not available for the current Kiro account/subscription. Try %s or %s, or remove unsupported models from the whitelist.",
+				testModelID, kiro.DefaultTestModelID, "claude-haiku-4-5-20251001"))
+		}
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Kiro Runtime returned %d: %s", resp.StatusCode, string(body)))
+	}
+
+	parseResult, err := kiro.ParseNonStreamingEventStreamWithContext(resp.Body, testModelID, buildResult.Context)
+	if err != nil {
+		return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to parse Kiro response: %s", err.Error()))
+	}
+
+	var responseText string
+	gjson.GetBytes(parseResult.ResponseBody, "content").ForEach(func(_, block gjson.Result) bool {
+		if block.Get("type").String() == "text" {
+			responseText += block.Get("text").String()
+		}
+		return true
+	})
+	if strings.TrimSpace(responseText) == "" {
+		responseText = "Kiro connection successful"
+	}
+
+	s.sendEvent(c, TestEvent{Type: "content", Text: responseText})
+	s.sendEvent(c, TestEvent{Type: "test_complete", Success: true})
+	return nil
+}
+
+// ensureKiroOAuthAccessToken returns a usable Kiro OAuth access token,
+// refreshing (and persisting) it when missing/expired, or when force is set.
+// Existing credentials are preserved (model_mapping etc. are merged over).
+func (s *AccountTestService) ensureKiroOAuthAccessToken(ctx context.Context, account *Account, force bool) (string, error) {
+	if account == nil {
+		return "", errors.New("account is nil")
+	}
+	if !force {
+		if token := strings.TrimSpace(account.GetCredential("access_token")); token != "" {
+			if expiresAt := account.GetCredentialAsTime("expires_at"); expiresAt == nil || time.Until(*expiresAt) > kiroTokenRefreshSkew {
+				return token, nil
+			}
+		}
+	}
+	if s.kiroRefresher == nil {
+		if token := strings.TrimSpace(account.GetCredential("access_token")); token != "" {
+			return token, nil
+		}
+		return "", errors.New("No access token available")
+	}
+	tokenInfo, refreshErr := s.kiroRefresher.RefreshAccountToken(ctx, account)
+	if refreshErr != nil {
+		return "", fmt.Errorf("refresh failed: %s", refreshErr.Error())
+	}
+	newCreds := s.kiroRefresher.BuildAccountCredentials(tokenInfo)
+	merged := cloneCredentials(account.Credentials)
+	for key, value := range newCreds {
+		if value != nil {
+			merged[key] = value
+		}
+	}
+	if err := persistAccountCredentials(ctx, s.accountRepo, account, merged); err != nil {
+		return "", fmt.Errorf("persist refreshed token failed: %s", err.Error())
+	}
+	token := strings.TrimSpace(account.GetCredential("access_token"))
+	if token == "" {
+		return "", errors.New("No access token available after refresh")
+	}
+	return token, nil
 }
 
 func (s *AccountTestService) testCNProviderChatCompletionsConnection(c *gin.Context, account *Account, modelID string, prompt string) error {

@@ -87,7 +87,7 @@ const props = withDefaults(defineProps<{
   uploadLabel: 'Upload',
   removeLabel: 'Remove',
   hint: '',
-  maxSize: 300 * 1024,
+  maxSize: 20 * 1024 * 1024,
 })
 
 const emit = defineEmits<{
@@ -106,7 +106,38 @@ const previewSizeClass = computed(() => props.size === 'sm' ? 'h-14 w-14' : 'h-2
 const innerSizeClass = computed(() => props.size === 'sm' ? 'h-7 w-7' : 'h-12 w-12')
 const placeholderSizeClass = computed(() => props.size === 'sm' ? 'h-5 w-5' : 'h-8 w-8')
 
-function handleUpload(event: Event) {
+async function compressImage(file: File, maxDim = 1024, quality = 0.85): Promise<string> {
+  const dataURL = await new Promise<string>((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(r.result as string)
+    r.onerror = () => reject(r.error)
+    r.readAsDataURL(file)
+  })
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image()
+    i.onload = () => resolve(i)
+    i.onerror = () => reject(new Error('image decode failed'))
+    i.src = dataURL
+  })
+  let { width, height } = img
+  if (width > maxDim || height > maxDim) {
+    const ratio = Math.min(maxDim / width, maxDim / height)
+    width = Math.round(width * ratio)
+    height = Math.round(height * ratio)
+  }
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return dataURL
+  ctx.drawImage(img, 0, 0, width, height)
+  const supportsWebP = canvas.toDataURL('image/webp', quality).startsWith('data:image/webp')
+  if (supportsWebP) return canvas.toDataURL('image/webp', quality)
+  if (file.type === 'image/png') return canvas.toDataURL('image/png')
+  return canvas.toDataURL('image/jpeg', quality)
+}
+
+async function handleUpload(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   error.value = ''
@@ -114,7 +145,8 @@ function handleUpload(event: Event) {
   if (!file) return
 
   if (props.maxSize && file.size > props.maxSize) {
-    error.value = `File too large (${(file.size / 1024).toFixed(1)} KB), max ${(props.maxSize / 1024).toFixed(0)} KB`
+    const fmtSize = (bytes: number) => bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${(bytes / 1024).toFixed(1)} KB`
+    error.value = `File too large (${fmtSize(file.size)}), max ${fmtSize(props.maxSize)}`
     input.value = ''
     return
   }
@@ -132,10 +164,13 @@ function handleUpload(event: Event) {
       input.value = ''
       return
     }
-    reader.onload = (e) => {
-      emit('update:modelValue', e.target?.result as string)
+    try {
+      const compressed = await compressImage(file)
+      emit('update:modelValue', compressed)
+    } catch {
+      error.value = 'Failed to process image'
+      input.value = ''
     }
-    reader.readAsDataURL(file)
   }
 
   reader.onerror = () => {

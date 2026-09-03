@@ -246,7 +246,7 @@ func TestUpdateCredentialsIdentityChangeClearsAllOllamaManagedExtra(t *testing.T
 	client, mock := newOllamaCloudUsageRepositoryTestClient(t)
 	mock.ExpectBegin()
 	mock.ExpectExec(`(?s)UPDATE accounts.*JSON_EXTRACT\(credentials, '\$.api_key'\) <=> JSON_EXTRACT\(\?, '\$.api_key'\).*ollama_cloud_usage_session.*ollama_cloud_usage_auto_refresh.*ollama_cloud_usage_snapshot`).
-		WithArgs(`{"api_key":"new-key","base_url":"https://ollama.com"}`, `{"api_key":"new-key","base_url":"https://ollama.com"}`, `{"api_key":"new-key","base_url":"https://ollama.com"}`, int64(17)).
+		WithArgs(`{"api_key":"new-key","base_url":"https://ollama.com"}`, `{"api_key":"new-key","base_url":"https://ollama.com"}`, `{"api_key":"new-key","base_url":"https://ollama.com"}`, `{"api_key":"new-key","base_url":"https://ollama.com"}`, `{"api_key":"new-key","base_url":"https://ollama.com"}`, int64(17)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).
 		WithArgs(service.SchedulerOutboxEventAccountChanged, int64(17), nil, nil, sqlmock.AnyArg()).
@@ -285,7 +285,7 @@ func TestUpdateCredentialsCleanupBranchRequiresChangedCredentials(t *testing.T) 
 	client, mock := newOllamaCloudUsageRepositoryTestClient(t)
 	mock.ExpectBegin()
 	mock.ExpectExec(`(?s)UPDATE accounts.*CASE.*AND NOT \(credentials <=> \?\)`).
-		WithArgs(`{"api_key":"same-key","base_url":"https://relay.example.com/v1"}`, `{"api_key":"same-key","base_url":"https://relay.example.com/v1"}`, `{"api_key":"same-key","base_url":"https://relay.example.com/v1"}`, int64(17)).
+		WithArgs(`{"api_key":"same-key","base_url":"https://relay.example.com/v1"}`, `{"api_key":"same-key","base_url":"https://relay.example.com/v1"}`, `{"api_key":"same-key","base_url":"https://relay.example.com/v1"}`, `{"api_key":"same-key","base_url":"https://relay.example.com/v1"}`, `{"api_key":"same-key","base_url":"https://relay.example.com/v1"}`, int64(17)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).
 		WithArgs(service.SchedulerOutboxEventAccountChanged, int64(17), nil, nil, sqlmock.AnyArg()).
