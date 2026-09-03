@@ -32,7 +32,7 @@ func TestDeductUsageBillingBalance_UsesSufficientBalanceGuard(t *testing.T) {
 	tx, err := db.BeginTx(ctx, nil)
 	require.NoError(t, err)
 	mock.ExpectExec(conditionalBalanceDeductSQL).
-		WithArgs(2.5, int64(42)).
+		WithArgs(2.5, int64(42), 2.5).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectQuery(`SELECT balance FROM users WHERE id = \?`).
 		WithArgs(int64(42)).
@@ -57,7 +57,7 @@ func TestDeductUsageBillingBalance_RecordsOverdraftWhenGuardMisses(t *testing.T)
 	tx, err := db.BeginTx(ctx, nil)
 	require.NoError(t, err)
 	mock.ExpectExec(conditionalBalanceDeductSQL).
-		WithArgs(10.0, int64(42)).
+		WithArgs(10.0, int64(42), 10.0).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectExec(overdraftBalanceDeductSQL).
 		WithArgs(10.0, int64(42)).
@@ -85,7 +85,7 @@ func TestApplyUsageBillingEffects_FlagsBalanceOverdraft(t *testing.T) {
 	tx, err := db.BeginTx(ctx, nil)
 	require.NoError(t, err)
 	mock.ExpectExec(conditionalBalanceDeductSQL).
-		WithArgs(10.0, int64(42)).
+		WithArgs(10.0, int64(42), 10.0).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectExec(overdraftBalanceDeductSQL).
 		WithArgs(10.0, int64(42)).
@@ -118,7 +118,7 @@ func TestDeductUsageBillingBalance_ReturnsUserNotFoundWhenNoUserUpdated(t *testi
 	tx, err := db.BeginTx(ctx, nil)
 	require.NoError(t, err)
 	mock.ExpectExec(conditionalBalanceDeductSQL).
-		WithArgs(10.0, int64(42)).
+		WithArgs(10.0, int64(42), 10.0).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectExec(overdraftBalanceDeductSQL).
 		WithArgs(10.0, int64(42)).
@@ -141,7 +141,7 @@ func TestReserveUsageBillingBatchImageBalance_MovesAvailableToFrozen(t *testing.
 	tx, err := db.BeginTx(ctx, nil)
 	require.NoError(t, err)
 	mock.ExpectExec(reserveBatchImageHoldSQL).
-		WithArgs(2.5, int64(42)).
+		WithArgs(2.5, 2.5, int64(42), 2.5).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectQuery(`SELECT balance, frozen_balance FROM users WHERE id = \?`).
 		WithArgs(int64(42)).
@@ -168,7 +168,7 @@ func TestReserveUsageBillingBatchImageBalance_InsufficientBalance(t *testing.T) 
 	tx, err := db.BeginTx(ctx, nil)
 	require.NoError(t, err)
 	mock.ExpectExec(reserveBatchImageHoldSQL).
-		WithArgs(10.0, int64(42)).
+		WithArgs(10.0, 10.0, int64(42), 10.0).
 		WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectQuery(userExistsForBillingSQL).
 		WithArgs(int64(42)).
@@ -191,7 +191,7 @@ func TestCaptureUsageBillingBatchImageBalance_ReleasesRemainder(t *testing.T) {
 	tx, err := db.BeginTx(ctx, nil)
 	require.NoError(t, err)
 	mock.ExpectExec(captureBatchImageHoldSQL).
-		WithArgs(1.0, 0.25, int64(42)).
+		WithArgs(1.0, 0.25, 1.0, 0.25, 1.0, 0.25, 1.0, 0.25, 1.0, int64(42), 1.0).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectQuery(`SELECT balance, frozen_balance FROM users WHERE id = \?`).
 		WithArgs(int64(42)).
@@ -236,7 +236,7 @@ func TestReleaseUsageBillingBatchImageBalance_ReturnsFrozenToAvailable(t *testin
 		WithArgs(service.BatchImageHoldRequestID("imgbatch_release"), int64(7)).
 		WillReturnRows(sqlmock.NewRows([]string{"?column?"}).AddRow(1))
 	mock.ExpectExec(releaseBatchImageHoldSQL).
-		WithArgs(1.0, int64(42)).
+		WithArgs(1.0, 1.0, int64(42), 1.0).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectQuery(`SELECT balance, frozen_balance FROM users WHERE id = \?`).
 		WithArgs(int64(42)).

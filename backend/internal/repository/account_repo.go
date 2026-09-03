@@ -1448,7 +1448,8 @@ func (r *accountRepository) SetGrokCredentialErrorIfMatch(
 				)
 			))
 		`, service.StatusError, errorMsg, id, service.StatusActive, service.PlatformGrok, service.AccountTypeOAuth,
-			snapshot.CredentialsJSON, snapshot.ProxyID, string(service.GrokCredentialReasonProxyInvalid))
+			snapshot.CredentialsJSON, snapshot.ProxyID, string(service.GrokCredentialReasonProxyInvalid),
+			string(service.GrokCredentialReasonProxyInvalid))
 		if err != nil {
 			return err
 		}
@@ -1727,6 +1728,7 @@ func (r *accountRepository) SetGrokOAuthRefreshTempUnschedulableIfCredentialsUnc
 			service.StatusActive,
 			string(expectedJSON),
 			expectedProxyID,
+			until,
 		)
 		if err != nil {
 			return err
@@ -2407,7 +2409,7 @@ func (r *accountRepository) SetTempUnschedulable(ctx context.Context, id int64, 
 		WHERE id = ?
 			AND deleted_at IS NULL
 			AND (temp_unschedulable_until IS NULL OR temp_unschedulable_until < ?)
-	`, until, reason, id)
+	`, until, reason, id, until)
 	if err != nil {
 		return err
 	}
@@ -2454,7 +2456,7 @@ func (r *accountRepository) SetGrokCredentialTempUnschedulableIfMatch(
 			AND (a.auto_pause_on_expired IS NOT TRUE OR a.expires_at IS NULL OR a.expires_at > NOW())
 			AND a.credentials = ?
 			AND a.proxy_id <=> ?
-		`, until, reason, id, service.StatusActive, service.PlatformGrok, service.AccountTypeOAuth,
+		`, until, until, reason, id, service.StatusActive, service.PlatformGrok, service.AccountTypeOAuth,
 			snapshot.CredentialsJSON, snapshot.ProxyID)
 		if err != nil {
 			return err
@@ -2843,7 +2845,7 @@ func (r *accountRepository) updateUpstreamBillingProbeSnapshotInTx(
 			AND JSON_EXTRACT(extra, '$.upstream_billing_probe_enabled') <=> ?
 			AND JSON_EXTRACT(extra, '$.upstream_billing_rate_sync_enabled') <=> ?
 			AND deleted_at IS NULL
-	`, string(payload), account.ID, account.Platform, account.Type, string(credentials), proxyID, string(expectedSnapshotJSON), string(expectedEnabledJSON), string(expectedRateSyncEnabledJSON), rateMultiplier)
+	`, string(payload), rateMultiplier, rateMultiplier, account.ID, account.Platform, account.Type, string(credentials), proxyID, string(expectedSnapshotJSON), string(expectedEnabledJSON), string(expectedRateSyncEnabledJSON))
 	if err != nil {
 		return err
 	}

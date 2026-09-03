@@ -249,7 +249,7 @@ func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, am
 		SET balance = balance - ?,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL AND balance >= ?
-	`, amount, userID)
+	`, amount, userID, amount)
 	if err != nil {
 		return 0, false, err
 	}
@@ -298,7 +298,7 @@ func reserveUsageBillingBatchImageBalance(ctx context.Context, tx *sql.Tx, cmd *
 			frozen_balance = COALESCE(frozen_balance, 0) + ?,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL AND balance >= ?
-	`, cmd.HoldAmount, cmd.UserID)
+	`, cmd.HoldAmount, cmd.HoldAmount, cmd.UserID, cmd.HoldAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -336,7 +336,9 @@ func captureUsageBillingBatchImageBalance(ctx context.Context, tx *sql.Tx, cmd *
 			frozen_balance = COALESCE(frozen_balance, 0) - ?,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL AND COALESCE(frozen_balance, 0) >= ?
-	`, cmd.HoldAmount, cmd.ActualAmount, cmd.UserID)
+	`, cmd.HoldAmount, cmd.ActualAmount, cmd.HoldAmount, cmd.ActualAmount,
+		cmd.HoldAmount, cmd.ActualAmount, cmd.HoldAmount, cmd.ActualAmount,
+		cmd.HoldAmount, cmd.UserID, cmd.HoldAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +381,7 @@ func releaseUsageBillingBatchImageBalance(ctx context.Context, tx *sql.Tx, cmd *
 			frozen_balance = COALESCE(frozen_balance, 0) - ?,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL AND COALESCE(frozen_balance, 0) >= ?
-	`, cmd.HoldAmount, cmd.UserID)
+	`, cmd.HoldAmount, cmd.HoldAmount, cmd.UserID, cmd.HoldAmount)
 	if err != nil {
 		return nil, err
 	}
@@ -461,7 +463,7 @@ func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID 
 			END,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL
-	`, amount, apiKeyID, service.StatusAPIKeyActive, service.StatusAPIKeyQuotaExhausted)
+	`, amount, service.StatusAPIKeyActive, amount, service.StatusAPIKeyQuotaExhausted, apiKeyID)
 	if err != nil {
 		return false, err
 	}
@@ -494,7 +496,7 @@ func incrementUsageBillingAPIKeyRateLimit(ctx context.Context, tx *sql.Tx, apiKe
 			window_7d_start = CASE WHEN window_7d_start IS NULL OR window_7d_start + INTERVAL 7 DAY <= NOW() THEN DATE_FORMAT(NOW(), '%Y-%m-%d') ELSE window_7d_start END,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL
-	`, cost, apiKeyID)
+	`, cost, cost, cost, cost, cost, cost, apiKeyID)
 	if err != nil {
 		return err
 	}

@@ -41,7 +41,7 @@ func TestUpdateUpstreamBillingProbeSnapshotRequiresSameIdentityAndSnapshot(t *te
 				WillReturnRows(sqlmock.NewRows([]string{"protocol", "host", "port", "username", "password", "status"}).
 					AddRow("http", "127.0.0.1", 3128, "user", "pass", service.StatusActive))
 			mock.ExpectExec(`(?s)`+regexp.QuoteMeta("UPDATE accounts")+`.*`+regexp.QuoteMeta("WHERE id = ?")+`.*`+regexp.QuoteMeta("AND platform = ?")+`.*`+regexp.QuoteMeta("AND type = ?")+`.*`+regexp.QuoteMeta("AND credentials = ?")+`.*`+regexp.QuoteMeta("AND proxy_id <=> ?")+`.*`+regexp.QuoteMeta("JSON_EXTRACT(extra, '$.upstream_billing_probe') <=> ?")+`.*`+regexp.QuoteMeta("JSON_EXTRACT(extra, '$.upstream_billing_probe_enabled') <=> ?")+`.*`+regexp.QuoteMeta("JSON_EXTRACT(extra, '$.upstream_billing_rate_sync_enabled') <=> ?")).
-				WithArgs(sqlmock.AnyArg(), int64(17), service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test","base_url":"http://127.0.0.1:8080"}`, int64(9), `{"status":"stale"}`, "null", "null", nil).
+				WithArgs(sqlmock.AnyArg(), nil, nil, int64(17), service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test","base_url":"http://127.0.0.1:8080"}`, int64(9), `{"status":"stale"}`, "null", "null").
 				WillReturnResult(sqlmock.NewResult(0, tt.affected))
 			if tt.affected > 0 {
 				mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).
@@ -98,7 +98,7 @@ func TestUpdateUpstreamBillingProbeSnapshotCommitsSnapshotAndOutboxAtomically(t 
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`(?s)`+regexp.QuoteMeta("UPDATE accounts")+`.*`+regexp.QuoteMeta("rate_multiplier = CASE")+`.*`+regexp.QuoteMeta("THEN CAST(? AS DECIMAL(30,8))")+`.*`+regexp.QuoteMeta("AND credentials = ?")+`.*`+regexp.QuoteMeta("AND proxy_id <=> ?")+`.*`+regexp.QuoteMeta("JSON_EXTRACT(extra, '$.upstream_billing_probe') <=> ?")).
-		WithArgs(sqlmock.AnyArg(), int64(17), service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test"}`, nil, "null", "true", "true", 0.065).
+		WithArgs(sqlmock.AnyArg(), 0.065, 0.065, int64(17), service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test"}`, nil, "null", "true", "true").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).
 		WithArgs(service.SchedulerOutboxEventAccountChanged, int64(17), nil, nil, sqlmock.AnyArg()).
@@ -175,7 +175,7 @@ func TestUpdateUpstreamBillingProbeSnapshotRollsBackWhenOutboxFails(t *testing.T
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`(?s)`+regexp.QuoteMeta("UPDATE accounts")+`.*`+regexp.QuoteMeta("AND proxy_id <=> ?")+`.*`+regexp.QuoteMeta("JSON_EXTRACT(extra, '$.upstream_billing_probe') <=> ?")).
-		WithArgs(sqlmock.AnyArg(), int64(18), service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test"}`, nil, "null", "true", "true", 0.7).
+		WithArgs(sqlmock.AnyArg(), 0.7, 0.7, int64(18), service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test"}`, nil, "null", "true", "true").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).WillReturnError(errors.New("outbox failed"))
 	mock.ExpectRollback()

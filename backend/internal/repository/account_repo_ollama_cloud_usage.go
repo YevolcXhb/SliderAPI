@@ -329,7 +329,7 @@ func lockOllamaCloudUsageGroup(
 			AND JSON_UNQUOTE(JSON_EXTRACT(credentials, '$.api_key')) = ?
 		ORDER BY id
 		FOR UPDATE
-	`, apiKey, account.ID, account.Platform, account.Type, string(credentials), proxyID)
+	`, account.ID, account.Platform, account.Type, string(credentials), proxyID, apiKey)
 	if err != nil {
 		return nil, err
 	}

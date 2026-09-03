@@ -242,7 +242,7 @@ func (r *pluginRepository) UpdateBindingsAndState(
 		UPDATE sub2api_plugin_installations
 		SET state = ?, last_error = ?, enabled_at = ?, updated_at = NOW()
 		WHERE id = ? AND (? = '' OR state = ?) AND binary_sha256 = ?
-	`, pluginID, state, lastError, enabledAt, expectedState, expectedBinarySHA256)
+	`, state, lastError, enabledAt, pluginID, expectedState, state, expectedBinarySHA256)
 	if err != nil {
 		return err
 	}

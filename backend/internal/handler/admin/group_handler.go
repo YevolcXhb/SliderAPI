@@ -100,7 +100,7 @@ func NewGroupHandler(adminService service.AdminService, dashboardService *servic
 type CreateGroupRequest struct {
 	Name                      string                        `json:"name" binding:"required"`
 	Description               string                        `json:"description"`
-	Platform                  string                        `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity grok kimi zhipu deepseek composite"`
+	Platform                  string                        `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity grok kimi zhipu deepseek kiro composite"`
 	RateMultiplier            float64                       `json:"rate_multiplier"`
 	IsExclusive               bool                          `json:"is_exclusive"`
 	SubscriptionType          string                        `json:"subscription_type" binding:"omitempty,oneof=standard subscription"`
@@ -168,7 +168,7 @@ type CreateGroupRequest struct {
 type UpdateGroupRequest struct {
 	Name                      string                         `json:"name"`
 	Description               *string                        `json:"description"`
-	Platform                  string                         `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity grok kimi zhipu deepseek composite"`
+	Platform                  string                         `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity grok kimi zhipu deepseek kiro composite"`
 	RateMultiplier            *float64                       `json:"rate_multiplier"`
 	IsExclusive               *bool                          `json:"is_exclusive"`
 	Status                    string                         `json:"status" binding:"omitempty,oneof=active inactive"`
@@ -929,7 +929,6 @@ func (h *GroupHandler) UpdateSortOrder(c *gin.Context) {
 	response.Success(c, gin.H{"message": "Sort order updated successfully"})
 }
 
-
 // GetGroupRateSchedules returns time-range rate schedules for a group.
 // GET /api/v1/admin/groups/:id/rate-schedules
 func (h *GroupHandler) GetGroupRateSchedules(c *gin.Context) {
@@ -1003,9 +1002,9 @@ type ReplaceGroupRateSchedulesRequest struct {
 }
 
 type ReplaceGroupRateScheduleEntry struct {
-	TargetUserID   *int64   `json:"target_user_id,omitempty"`
-	StartMinute    int      `json:"start_minute"`
-	EndMinute      int      `json:"end_minute"`
-	RateMultiplier float64  `json:"rate_multiplier"`
-	Enabled        *bool    `json:"enabled,omitempty"`
+	TargetUserID   *int64  `json:"target_user_id,omitempty"`
+	StartMinute    int     `json:"start_minute"`
+	EndMinute      int     `json:"end_minute"`
+	RateMultiplier float64 `json:"rate_multiplier"`
+	Enabled        *bool   `json:"enabled,omitempty"`
 }

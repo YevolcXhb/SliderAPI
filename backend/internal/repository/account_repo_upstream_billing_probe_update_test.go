@@ -79,7 +79,7 @@ func TestLockAndMergeAccountProbeExtraUsesCurrentDatabaseSnapshot(t *testing.T) 
 			t.Cleanup(func() { _ = client.Close() })
 
 			mock.ExpectQuery(`(?s)`+regexp.QuoteMeta("SELECT")+`.*`+regexp.QuoteMeta("FOR UPDATE")).
-				WithArgs(int64(27), service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test"}`, nil).
+				WithArgs(service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test"}`, nil, service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test"}`, `{"api_key":"sk-test"}`, nil, int64(27)).
 				WillReturnRows(sqlmock.NewRows([]string{"identity_unchanged", "ollama_group_unchanged", "ollama_proxy_unchanged", "enabled", "rate_sync_enabled", "snapshot", "ollama_session", "ollama_auto", "ollama_snapshot"}).
 					AddRow(tt.identityUnchanged, false, true, tt.databaseEnabled, nil, tt.databaseSnapshot, nil, nil, nil))
 
@@ -170,7 +170,7 @@ func TestLockAndMergeAccountProbeExtraNeverInfersProbeFromRateSync(t *testing.T)
 			t.Cleanup(func() { _ = client.Close() })
 
 			mock.ExpectQuery(`(?s)`+regexp.QuoteMeta("SELECT")+`.*`+regexp.QuoteMeta("FOR UPDATE")).
-				WithArgs(int64(31), service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test"}`, nil).
+				WithArgs(service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test"}`, nil, service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test"}`, `{"api_key":"sk-test"}`, nil, int64(31)).
 				WillReturnRows(sqlmock.NewRows([]string{"identity_unchanged", "ollama_group_unchanged", "ollama_proxy_unchanged", "enabled", "rate_sync_enabled", "snapshot", "ollama_session", "ollama_auto", "ollama_snapshot"}).
 					AddRow(true, false, true, tt.databaseEnabled, tt.databaseRateSync, nil, nil, nil, nil))
 
@@ -209,7 +209,7 @@ func TestLockAndMergeAccountProbeExtraProtectsOllamaManagedFields(t *testing.T) 
 			t.Cleanup(func() { _ = client.Close() })
 
 			mock.ExpectQuery(`(?s)`+regexp.QuoteMeta("SELECT")+`.*`+regexp.QuoteMeta("FOR UPDATE")).
-				WithArgs(int64(29), service.PlatformAnthropic, service.AccountTypeAPIKey, `{"api_key":"key","base_url":"https://ollama.com"}`, nil).
+				WithArgs(service.PlatformAnthropic, service.AccountTypeAPIKey, `{"api_key":"key","base_url":"https://ollama.com"}`, nil, service.PlatformAnthropic, service.AccountTypeAPIKey, `{"api_key":"key","base_url":"https://ollama.com"}`, `{"api_key":"key","base_url":"https://ollama.com"}`, nil, int64(29)).
 				WillReturnRows(sqlmock.NewRows([]string{"identity_unchanged", "ollama_group_unchanged", "ollama_proxy_unchanged", "enabled", "rate_sync_enabled", "snapshot", "ollama_session", "ollama_auto", "ollama_snapshot"}).
 					AddRow(identityUnchanged, identityUnchanged, true, nil, nil, nil, []byte(`"local-ciphertext"`), []byte(`true`), []byte(`{"status":"ok"}`)))
 
@@ -246,7 +246,7 @@ func TestUpdateExtraExplicitProbeDisableRemovesSnapshot(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 
 	mock.ExpectBegin()
-	mock.ExpectExec(`(?s)UPDATE accounts SET extra = ` + regexp.QuoteMeta("JSON_REMOVE(JSON_MERGE_PATCH(COALESCE(extra, JSON_OBJECT()), ?), '$.upstream_billing_probe')") + `.*`).
+	mock.ExpectExec(`(?s)UPDATE accounts SET extra = `+regexp.QuoteMeta("JSON_REMOVE(JSON_MERGE_PATCH(COALESCE(extra, JSON_OBJECT()), ?), '$.upstream_billing_probe')")+`.*`).
 		WithArgs(`{"upstream_billing_probe_enabled":false}`, int64(27)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).
@@ -269,7 +269,7 @@ func TestUpdateExtraNilProbeRemovesKeyInsteadOfWritingJSONNull(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 
 	mock.ExpectBegin()
-	mock.ExpectExec(`(?s)UPDATE accounts SET extra = ` + regexp.QuoteMeta("JSON_REMOVE(JSON_MERGE_PATCH(COALESCE(extra, JSON_OBJECT()), ?), '$.upstream_billing_probe')") + `.*`).
+	mock.ExpectExec(`(?s)UPDATE accounts SET extra = `+regexp.QuoteMeta("JSON_REMOVE(JSON_MERGE_PATCH(COALESCE(extra, JSON_OBJECT()), ?), '$.upstream_billing_probe')")+`.*`).
 		WithArgs(`{"upstream_billing_probe":null}`, int64(27)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).
@@ -322,7 +322,7 @@ func TestBulkUpdateProbeEligibilityMismatchRollsBack(t *testing.T) {
 
 	enabled := true
 	mock.ExpectBegin()
-	mock.ExpectExec(`(?s)UPDATE accounts SET extra = .*` + regexp.QuoteMeta("WHERE id IN (?, ?) AND deleted_at IS NULL AND type = ?")).
+	mock.ExpectExec(`(?s)UPDATE accounts SET extra = .*`+regexp.QuoteMeta("WHERE id IN (?, ?) AND deleted_at IS NULL AND type = ?")).
 		WithArgs(sqlmock.AnyArg(), int64(27), int64(28), service.AccountTypeAPIKey).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectRollback()
@@ -346,7 +346,7 @@ func TestUpdateCredentialsAtomicallyClearsProbeForOpenAIAPIKeyIdentityChange(t *
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`(?s)UPDATE accounts.*NOT \(credentials <=> \?\).*JSON_REMOVE\(COALESCE\(extra, JSON_OBJECT\(\)\), '\$.upstream_billing_probe'\)`).
-		WithArgs(`{"api_key":"sk-new"}`, int64(27)).
+		WithArgs(`{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, int64(27)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).
 		WithArgs(service.SchedulerOutboxEventAccountChanged, int64(27), nil, nil, sqlmock.AnyArg()).
@@ -369,7 +369,7 @@ func TestUpdateWithAccountBillingSettingsRollsBackWhenOutboxFails(t *testing.T) 
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(`(?s)`+regexp.QuoteMeta("SELECT")+`.*`+regexp.QuoteMeta("FOR UPDATE")).
-		WithArgs(int64(27), service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test"}`, nil).
+		WithArgs(service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test"}`, nil, service.PlatformOpenAI, service.AccountTypeAPIKey, `{"api_key":"sk-test"}`, `{"api_key":"sk-test"}`, nil, int64(27)).
 		WillReturnRows(sqlmock.NewRows([]string{"identity_unchanged", "ollama_group_unchanged", "ollama_proxy_unchanged", "enabled", "rate_sync_enabled", "snapshot", "ollama_session", "ollama_auto", "ollama_snapshot"}).
 			AddRow(true, false, true, []byte(`true`), []byte(`true`), []byte(`{"status":"ok"}`), nil, nil, nil))
 	mock.ExpectExec(`(?s)UPDATE .*accounts.*SET.*WHERE .*id.*`).
@@ -414,7 +414,7 @@ func TestUpdateExtraRollsBackWhenOutboxFails(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 
 	mock.ExpectBegin()
-	mock.ExpectExec(`(?s)UPDATE accounts SET extra = ` + regexp.QuoteMeta("JSON_REMOVE(JSON_MERGE_PATCH(COALESCE(extra, JSON_OBJECT()), ?), '$.upstream_billing_probe')") + `.*`).
+	mock.ExpectExec(`(?s)UPDATE accounts SET extra = `+regexp.QuoteMeta("JSON_REMOVE(JSON_MERGE_PATCH(COALESCE(extra, JSON_OBJECT()), ?), '$.upstream_billing_probe')")+`.*`).
 		WithArgs(`{"upstream_billing_probe_enabled":false}`, int64(27)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).WillReturnError(errors.New("outbox failed"))
@@ -435,8 +435,8 @@ func TestUpdateCredentialsRollsBackWhenOutboxFails(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 
 	mock.ExpectBegin()
-	mock.ExpectExec(`(?s)UPDATE accounts.*` + regexp.QuoteMeta("NOT (credentials <=> ?)") + `.*` + regexp.QuoteMeta("JSON_REMOVE(COALESCE(extra, JSON_OBJECT()), '$.upstream_billing_probe')")).
-		WithArgs(`{"api_key":"sk-new"}`, int64(27)).
+	mock.ExpectExec(`(?s)UPDATE accounts.*`+regexp.QuoteMeta("NOT (credentials <=> ?)")+`.*`+regexp.QuoteMeta("JSON_REMOVE(COALESCE(extra, JSON_OBJECT()), '$.upstream_billing_probe')")).
+		WithArgs(`{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, `{"api_key":"sk-new"}`, int64(27)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).WillReturnError(errors.New("outbox failed"))
 	mock.ExpectRollback()
@@ -457,7 +457,7 @@ func TestBulkUpdateRollsBackWhenOutboxFails(t *testing.T) {
 
 	name := "renamed"
 	mock.ExpectBegin()
-	mock.ExpectExec(`(?s)UPDATE accounts SET name = \?.*` + regexp.QuoteMeta("WHERE id IN (?, ?)")).
+	mock.ExpectExec(`(?s)UPDATE accounts SET name = \?.*`+regexp.QuoteMeta("WHERE id IN (?, ?)")).
 		WithArgs(name, int64(27), int64(28)).
 		WillReturnResult(sqlmock.NewResult(0, 2))
 	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO scheduler_outbox")).WillReturnError(errors.New("outbox failed"))

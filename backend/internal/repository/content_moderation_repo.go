@@ -198,7 +198,7 @@ WHERE user_id = ?
   AND (? IS FALSE OR action <> 'cyber_policy')
   AND created_at >= ?
   AND created_at > COALESCE((SELECT at FROM last_auto_ban), '-infinity')
-`, userID, since, excludeCyberPolicy).Scan(&count)
+`, userID, userID, excludeCyberPolicy, since).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("count user content moderation flagged logs: %w", err)
 	}

@@ -29,7 +29,7 @@ func TestContentModerationRepositoryCountFlaggedByUserSince_ExcludesHashBlock(t 
 	repo := NewContentModerationRepository(db)
 	since := time.Now().Add(-time.Hour)
 	mock.ExpectQuery(regexp.QuoteMeta("AND action <> 'hash_block'")).
-		WithArgs(int64(1001), since, false).
+		WithArgs(int64(1001), int64(1001), false, since).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(2))
 
 	count, err := repo.CountFlaggedByUserSince(context.Background(), 1001, since, false)
@@ -47,7 +47,7 @@ func TestContentModerationRepositoryCountFlaggedByUserSince_ExcludesCyberPolicyW
 	repo := NewContentModerationRepository(db)
 	since := time.Now().Add(-time.Hour)
 	mock.ExpectQuery(regexp.QuoteMeta("AND (? IS FALSE OR action <> 'cyber_policy')")).
-		WithArgs(int64(1001), since, true).
+		WithArgs(int64(1001), int64(1001), true, since).
 		WillReturnRows(sqlmock.NewRows([]string{"count"}).AddRow(3))
 
 	count, err := repo.CountFlaggedByUserSince(context.Background(), 1001, since, true)

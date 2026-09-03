@@ -92,7 +92,7 @@ UPDATE users
 SET balance = balance - ?,
 	share_income_balance = share_income_balance - ?,
 	updated_at = NOW()
-WHERE id = ?`, totalDeducted, input.UserID); err != nil {
+WHERE id = ?`, totalDeducted, totalDeducted, input.UserID); err != nil {
 		return nil, err
 	}
 
@@ -209,7 +209,7 @@ UPDATE users
 SET balance = balance + ?,
 	share_income_balance = share_income_balance + ?,
 	updated_at = NOW()
-WHERE id = ?`, current.TotalDeducted, current.UserID); err != nil {
+WHERE id = ?`, current.TotalDeducted, current.TotalDeducted, current.UserID); err != nil {
 		return nil, err
 	}
 

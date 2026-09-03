@@ -73,7 +73,7 @@ func (r *groupRateScheduleRepository) ReplaceForGroup(ctx context.Context, group
 					group_id, target_user_id, start_minute, end_minute, rate_multiplier, enabled, created_at, updated_at
 				)
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-			`, groupID, targetUserID, schedule.StartMinute, schedule.EndMinute, schedule.RateMultiplier, schedule.Enabled, now); err != nil {
+			`, groupID, targetUserID, schedule.StartMinute, schedule.EndMinute, schedule.RateMultiplier, schedule.Enabled, now, now); err != nil {
 				return nil, err
 			}
 		}
@@ -174,7 +174,7 @@ func (r *groupRateScheduleRepository) ListManagedTargetUserIDs(ctx context.Conte
 			WHERE ust.group_id = ?
 		) AS managed
 		ORDER BY user_id
-	`, groupID)
+	`, groupID, groupID)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (r *groupRateScheduleRepository) ApplyScheduledMultiplier(ctx context.Conte
 		ON DUPLICATE KEY UPDATE
 			applied_schedule_id = VALUES(applied_schedule_id),
 			updated_at = VALUES(updated_at)
-	`, groupID, currentMultiplier, scheduleID, now); err != nil {
+	`, groupID, currentMultiplier, scheduleID, now, now); err != nil {
 		return false, err
 	}
 
@@ -335,7 +335,7 @@ func (r *groupRateScheduleRepository) ApplyScheduledUserMultiplier(ctx context.C
 		ON DUPLICATE KEY UPDATE
 			applied_schedule_id = VALUES(applied_schedule_id),
 			updated_at = VALUES(updated_at)
-	`, groupID, userID, baseMultiplier, scheduleID, now); err != nil {
+	`, groupID, userID, baseMultiplier, scheduleID, now, now); err != nil {
 		return false, err
 	}
 
@@ -347,7 +347,7 @@ func (r *groupRateScheduleRepository) ApplyScheduledUserMultiplier(ctx context.C
 			ON DUPLICATE KEY UPDATE
 				rate_multiplier = VALUES(rate_multiplier),
 				updated_at = VALUES(updated_at)
-		`, userID, groupID, rateMultiplier, now); err != nil {
+		`, userID, groupID, rateMultiplier, now, now); err != nil {
 			return false, err
 		}
 		if err := enqueueSchedulerOutbox(ctx, tx, service.SchedulerOutboxEventGroupChanged, nil, &groupID, nil); err != nil {
@@ -402,7 +402,7 @@ func (r *groupRateScheduleRepository) RestoreBaseUserMultiplier(ctx context.Cont
 				ON DUPLICATE KEY UPDATE
 					rate_multiplier = VALUES(rate_multiplier),
 					updated_at = VALUES(updated_at)
-			`, userID, groupID, baseMultiplier.Float64, now); err != nil {
+			`, userID, groupID, baseMultiplier.Float64, now, now); err != nil {
 				return false, err
 			}
 		} else {

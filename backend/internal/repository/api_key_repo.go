@@ -796,7 +796,7 @@ func (r *apiKeyRepository) IncrementRateLimitUsage(ctx context.Context, id int64
 			window_7d_start = CASE WHEN window_7d_start IS NULL OR window_7d_start + INTERVAL 7 DAY <= NOW() THEN DATE(NOW()) ELSE window_7d_start END,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL`,
-		cost, id)
+		cost, cost, cost, cost, cost, cost, id)
 	return err
 }
 

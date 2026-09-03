@@ -51,10 +51,11 @@ func TestAccountRepository_GrokCredentialConditionalMutationsAreEligibleAndAtomi
 		require.Contains(t, normalized, "a.proxy_id <=> ?")
 		require.Contains(t, normalized, "NOT EXISTS ( SELECT 1 FROM proxies p")
 		require.NotContains(t, normalized, "INSERT INTO scheduler_outbox")
-		require.Len(t, exec.execArgs[0], 9)
+		require.Len(t, exec.execArgs[0], 10)
 		require.Equal(t, snapshot.CredentialsJSON, exec.execArgs[0][6])
 		require.Equal(t, &proxyID, exec.execArgs[0][7])
 		require.Equal(t, string(service.GrokCredentialReasonProxyInvalid), exec.execArgs[0][8])
+		require.Equal(t, string(service.GrokCredentialReasonProxyInvalid), exec.execArgs[0][9])
 	})
 
 	t.Run("transient", func(t *testing.T) {
@@ -77,9 +78,9 @@ func TestAccountRepository_GrokCredentialConditionalMutationsAreEligibleAndAtomi
 		require.Contains(t, normalized, "a.credentials = ?")
 		require.Contains(t, normalized, "a.proxy_id <=> ?")
 		require.NotContains(t, normalized, "INSERT INTO scheduler_outbox")
-		require.Len(t, exec.execArgs[0], 8)
-		require.Equal(t, snapshot.CredentialsJSON, exec.execArgs[0][6])
-		require.Equal(t, &proxyID, exec.execArgs[0][7])
+		require.Len(t, exec.execArgs[0], 9)
+		require.Equal(t, snapshot.CredentialsJSON, exec.execArgs[0][7])
+		require.Equal(t, &proxyID, exec.execArgs[0][8])
 	})
 }
 
@@ -213,7 +214,7 @@ func TestAccountRepository_SetGrokOAuthRefreshTempUnschedulableIfCredentialsUnch
 	require.Contains(t, normalized, "a.credentials = ?")
 	require.Contains(t, normalized, "a.proxy_id <=> ?")
 	require.Contains(t, normalized, "a.temp_unschedulable_until IS NULL OR a.temp_unschedulable_until < ?")
-	require.Len(t, exec.execArgs[0], 8)
+	require.Len(t, exec.execArgs[0], 9)
 	require.Equal(t, &proxyID, exec.execArgs[0][7])
 	require.NotContains(t, normalized, "INSERT INTO scheduler_outbox")
 }

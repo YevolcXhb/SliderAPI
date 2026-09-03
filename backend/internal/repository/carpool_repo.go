@@ -10,7 +10,6 @@ import (
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/service"
-
 )
 
 type carpoolRepository struct {
@@ -763,7 +762,7 @@ func (r *carpoolRepository) UpdateMembersQuotaFromSnapshot(ctx context.Context, 
 			weekly_limit_usd = ? * CASE WHEN quota_share_ratio > 0 THEN quota_share_ratio ELSE ? END,
 			updated_at = NOW()
 		WHERE pool_id = ? AND deleted_at IS NULL AND status = 'active'
-	`, poolID, snapshot.TotalFiveHourLimitUSD, snapshot.TotalWeeklyLimitUSD, defaultShareRatio)
+	`, defaultShareRatio, snapshot.TotalFiveHourLimitUSD, defaultShareRatio, snapshot.TotalWeeklyLimitUSD, defaultShareRatio, poolID)
 	return err
 }
 
@@ -962,7 +961,7 @@ func (r *carpoolRepository) UpdateMemberStatus(ctx context.Context, memberID int
 		UPDATE carpool_members
 		SET status = ?, updated_at = NOW(), deleted_at = CASE WHEN ? = 'removed' THEN ? ELSE NULL END
 		WHERE id = ?
-	`, memberID, status, removedAt)
+	`, status, status, removedAt, memberID)
 	if err != nil {
 		return err
 	}
@@ -1020,7 +1019,7 @@ func (r *carpoolRepository) GetRuntimeMemberLimitByGroupAndUser(ctx context.Cont
 			AND m.deleted_at IS NULL
 			AND m.status = 'active'
 		LIMIT 1
-	`, groupID, userID)
+	`, groupID, userID, userID, userID, userID)
 	var out service.CarpoolRuntimeMemberLimit
 	var windowStart sql.NullTime
 	err := row.Scan(&out.PoolID, &out.MemberID, &out.FiveHourLimitUSD, &out.FiveHourUsedUSD, &windowStart, &out.WeeklyLimitUSD, &out.WeeklyUsageUSD)
@@ -1050,7 +1049,7 @@ func (r *carpoolRepository) ListPoolMemberUsageStatsByPoolID(ctx context.Context
 			FROM carpool_members m
 			INNER JOIN carpool_pools p ON p.id = m.pool_id
 			WHERE m.pool_id = ?
-				AND m.user_id IN (` + sqlPlaceholders(len(userIDs)) + `)
+				AND m.user_id IN (`+sqlPlaceholders(len(userIDs))+`)
 				AND m.deleted_at IS NULL
 		)
 		SELECT
@@ -1129,7 +1128,7 @@ func (r *carpoolRepository) ListPoolMemberUsageStats(ctx context.Context, groupI
 			COALESCE(SUM(COALESCE(actual_cost, 0)), 0) AS total_cost_usd
 		FROM usage_logs
 		WHERE group_id = ?
-			AND user_id IN (` + sqlPlaceholders(len(userIDs)) + `)
+			AND user_id IN (`+sqlPlaceholders(len(userIDs))+`)
 		GROUP BY user_id
 	`, append([]any{groupID}, toAnySlice(userIDs)...)...)
 	if err != nil {

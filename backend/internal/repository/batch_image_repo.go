@@ -174,7 +174,7 @@ SET status = 'failed',
 WHERE batch_id = ?
   AND status IN ('created', 'uploading')
   AND provider_job_name IS NULL
-  AND updated_at <= ?`, batchID, code, message, now, cutoff)
+  AND updated_at <= ?`, code, message, now, cutoff, batchID, cutoff)
 	if err != nil {
 		return false, err
 	}
@@ -243,7 +243,7 @@ SET status = 'submitted',
     submitted_at = CASE WHEN submitted_at IS NULL THEN ? ELSE submitted_at END,
     updated_at = ?,
     version = version + 1
-WHERE batch_id = ?`, params.BatchID, params.ProviderJobName, params.ProviderInputRef, params.ProviderOutputRef, params.GCSInputURI, params.GCSOutputURI, now); err != nil {
+WHERE batch_id = ?`, params.ProviderJobName, params.ProviderInputRef, params.ProviderOutputRef, params.GCSInputURI, params.GCSOutputURI, now, now, params.BatchID); err != nil {
 		return err
 	}
 	return appendBatchImageEventWithSQL(ctx, sqlq, params.BatchID, "provider_submitted", params.EventPayload)
@@ -312,7 +312,7 @@ SET status = 'completed',
     version = version + 1
 WHERE batch_id = ?
   AND status = 'settling'
-  AND (manifest_hash IS NULL OR manifest_hash = '' OR manifest_hash = ?)`, params.BatchID, params.ActualCost, params.ManifestHash, now, outputExpiresAt)
+  AND (manifest_hash IS NULL OR manifest_hash = '' OR manifest_hash = ?)`, params.ActualCost, params.ManifestHash, now, now, outputExpiresAt, now, params.BatchID, params.ManifestHash)
 	if err != nil {
 		return err
 	}
@@ -358,7 +358,6 @@ WHERE batch_id = ?`, code, message, time.Now(), batchID); err != nil {
 	})
 }
 
-
 func (r *batchImageRepository) transitionBatchImageJobStatusWithSQL(ctx context.Context, sqlq batchImageSQLExecutor, batchID, toStatus string, opts service.BatchImageTransitionOptions) error {
 	var current string
 	if err := sqlq.QueryRowContext(ctx, `SELECT status FROM batch_image_jobs WHERE batch_id = ? FOR UPDATE`, batchID).Scan(&current); err != nil {
@@ -386,7 +385,7 @@ SET
     finished_at = CASE WHEN ? IN ('completed', 'failed', 'cancelled') AND finished_at IS NULL THEN ? ELSE finished_at END,
     settled_at = CASE WHEN ? = 'completed' AND settled_at IS NULL THEN ? ELSE settled_at END,
     output_deleted_at = CASE WHEN ? = 'output_deleted' AND output_deleted_at IS NULL THEN ? ELSE output_deleted_at END
-WHERE batch_id = ?`, batchID, toStatus, now, opts.ErrorCode, opts.ErrorMessage); err != nil {
+WHERE batch_id = ?`, toStatus, now, toStatus, opts.ErrorCode, toStatus, opts.ErrorMessage, toStatus, now, toStatus, now, toStatus, now, toStatus, now, toStatus, now, batchID); err != nil {
 		return err
 	}
 
@@ -395,8 +394,6 @@ WHERE batch_id = ?`, batchID, toStatus, now, opts.ErrorCode, opts.ErrorMessage);
 	}
 	return nil
 }
-
-
 
 func (r *batchImageRepository) CreateBatchImageItem(ctx context.Context, params service.CreateBatchImageItemParams) (*service.BatchImageItem, error) {
 	item, err := createBatchImageItemWithSQL(ctx, r.sql, params)
@@ -635,7 +632,7 @@ UPDATE batch_image_jobs
 SET input_deleted_at = CASE WHEN input_deleted_at IS NULL THEN ? ELSE input_deleted_at END,
     updated_at = ?,
     version = version + 1
-WHERE batch_id = ?`, batchID, deletedAt)
+WHERE batch_id = ?`, deletedAt, deletedAt, batchID)
 	if err != nil {
 		return err
 	}
@@ -657,7 +654,7 @@ SET status = CASE WHEN status = 'completed' THEN 'output_deleted' ELSE status EN
     finished_at = CASE WHEN status = 'completed' AND finished_at IS NULL THEN ? ELSE finished_at END,
     updated_at = ?,
     version = version + 1
-WHERE batch_id = ?`, batchID, deletedAt)
+WHERE batch_id = ?`, deletedAt, deletedAt, deletedAt, batchID)
 	if err != nil {
 		return err
 	}
@@ -676,7 +673,7 @@ func (r *batchImageRepository) MarkBatchImageDownloaded(ctx context.Context, bat
 UPDATE batch_image_jobs
 SET downloaded_at = CASE WHEN downloaded_at IS NULL THEN ? ELSE downloaded_at END,
     updated_at = ?
-WHERE batch_id = ?`, batchID, downloadedAt)
+WHERE batch_id = ?`, downloadedAt, downloadedAt, batchID)
 	if err != nil {
 		return err
 	}
@@ -698,7 +695,7 @@ WHERE batch_id = ?
   AND user_id = ?
   AND api_key_id = ?
   AND user_deleted_at IS NULL
-  AND status IN ('completed', 'failed', 'cancelled', 'output_deleted')`, batchID, userID, apiKeyID, deletedAt)
+  AND status IN ('completed', 'failed', 'cancelled', 'output_deleted')`, deletedAt, deletedAt, batchID, userID, apiKeyID)
 	if err != nil {
 		return err
 	}

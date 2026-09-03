@@ -346,16 +346,23 @@ func (s *AccountTestService) testKiroAccountConnection(c *gin.Context, account *
 		testModelID = kiro.MapModel(kiro.DefaultTestModelID)
 	}
 
-	if account.Type != AccountTypeAPIKey {
+	if account.Type != AccountTypeAPIKey && account.Type != AccountTypeUpstream && account.Type != AccountTypeOAuth {
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Unsupported Kiro account type: %s", account.Type))
 	}
 
 	authToken := strings.TrimSpace(account.GetOpenAIApiKey())
 	if authToken == "" {
+		// OAuth ???? api_key?? access_token ??? chat completions ???
+		authToken = strings.TrimSpace(account.GetCredential("access_token"))
+	}
+	if authToken == "" {
 		return s.sendErrorAndEnd(c, "No API key available")
 	}
 
 	baseURL := account.GetOpenAIBaseURL()
+	if strings.TrimSpace(baseURL) == "" {
+		baseURL = strings.TrimSpace(account.GetCredential("base_url"))
+	}
 	if strings.TrimSpace(baseURL) == "" {
 		return s.sendErrorAndEnd(c, "No Kiro base URL available")
 	}
