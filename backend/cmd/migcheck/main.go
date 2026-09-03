@@ -33,7 +33,7 @@ func main() {
 	}
 
 	// DSNs are stored without the sub2api-mysql compat prefix here because we
-	// only run plain SQL (no $n placeholders) — we just want a reachability
+	// only run plain SQL (no $n placeholders) -- we just want a reachability
 	// check, not the full compat driver.
 	if !strings.Contains(*dsn, "parseTime=") {
 		*dsn = ensureParam(*dsn, "parseTime=true")
@@ -76,7 +76,7 @@ func main() {
 		os.Exit(2)
 	}
 	if schemaExists == 0 {
-		fmt.Fprintln(os.Stderr, "schema_migrations table not found — run migrations first")
+		fmt.Fprintln(os.Stderr, "schema_migrations table not found -- run migrations first")
 		os.Exit(3)
 	}
 
@@ -118,7 +118,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "columns: %v\n", err)
 			return
 		}
-		defer rows2.Close()
+		defer func() { _ = rows2.Close() }()
 		for rows2.Next() {
 			var table, col, typ string
 			if err := rows2.Scan(&table, &col, &typ); err != nil {

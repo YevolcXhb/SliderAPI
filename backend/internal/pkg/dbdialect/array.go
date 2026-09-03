@@ -14,9 +14,9 @@ func ArrayJoin[T any](arr []T) string {
 	var sb strings.Builder
 	for i, v := range arr {
 		if i > 0 {
-			sb.WriteString(",")
+			_, _ = sb.WriteString(",")
 		}
-		_ = sb.WriteString(fmt.Sprint(v))
+		fmt.Fprint(&sb, v)
 	}
 	return sb.String()
 }

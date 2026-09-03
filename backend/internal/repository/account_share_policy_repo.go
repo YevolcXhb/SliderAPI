@@ -215,7 +215,7 @@ func accountSharePolicyWhere(filters service.AccountSharePolicyFilters) (string,
 	add := func(condition string, arg any) {
 		args = append(args, arg)
 		_, _ = where.WriteString(" AND ")
-		_, _ = where.WriteString(fmt.Sprintf(condition, len(args)))
+		_, _ = fmt.Fprintf(&where, condition, len(args))
 	}
 	if scopeType := strings.TrimSpace(filters.ScopeType); scopeType != "" {
 		add("scope_type = ?", scopeType)

@@ -1812,7 +1812,7 @@ func (s *ShopService) invalidateUserBalance(ctx context.Context, userID int64) {
 }
 
 func shopTxSupportsRowLock(tx *dbent.Tx) bool {
-	return tx != nil && "mysql" == dialect.Postgres
+	return tx != nil && dialect.Postgres == "mysql"
 }
 
 func (s *ShopService) AdminListCategories(ctx context.Context) ([]ShopCategoryDTO, error) {

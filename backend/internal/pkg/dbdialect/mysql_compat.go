@@ -210,7 +210,7 @@ func rewriteMySQLPlaceholders(query string) string {
 // rewriteMySQLPlaceholdersWithArgs converts numbered placeholders to '?'. The
 // caller's arguments are supplied in numeric order ($1 is args[0]); the
 // returned arguments are expanded in SQL occurrence order. This handles both
-// repeated and out-of-order placeholders, e.g. `$2, $1, $2` → `?, ?, ?` with
+// repeated and out-of-order placeholders, e.g. `, , ` -> `?, ?, ?` with
 // args `[args[1], args[0], args[1]]`.
 //
 // Single-quoted strings, double-quoted identifiers, MySQL backtick identifiers,
@@ -331,8 +331,8 @@ func rewriteMySQLPlaceholdersWithArgs(query string, args []driver.NamedValue) (s
 	mapped := make([]driver.NamedValue, 0, len(occurrences))
 	previous := 0
 	for _, occurrence := range occurrences {
-		out.WriteString(query[previous:occurrence.start])
-		out.WriteByte('?')
+		_, _ = out.WriteString(query[previous:occurrence.start])
+		_ = out.WriteByte('?')
 		previous = occurrence.end
 		if args != nil {
 			if occurrence.n > len(args) {
@@ -344,6 +344,6 @@ func rewriteMySQLPlaceholdersWithArgs(query string, args []driver.NamedValue) (s
 			mapped = append(mapped, nv)
 		}
 	}
-	out.WriteString(query[previous:])
+	_, _ = out.WriteString(query[previous:])
 	return out.String(), mapped, nil
 }

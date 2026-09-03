@@ -965,11 +965,11 @@ func unwrapSQLTx(v reflect.Value) (*sql.Tx, bool) {
 	if !v.IsValid() {
 		return nil, false
 	}
-	for v.Kind() == reflect.Interface || v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Interface || v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return nil, false
 		}
-		if v.Kind() == reflect.Ptr {
+		if v.Kind() == reflect.Pointer {
 			if stdTx, ok := v.Interface().(*sql.Tx); ok {
 				return stdTx, true
 			}
