@@ -337,7 +337,7 @@ func (r *carpoolRepository) ListAdminPools(ctx context.Context, filters service.
 			COALESCE((SELECT COUNT(*) FROM carpool_pool_accounts pa WHERE pa.pool_id = p.id), 0) AS bound_account_count,
 			TRUE AS is_owner,
 			'owner' AS current_user_status,
-			NULL::bigint AS current_user_request_id,
+			NULL AS current_user_request_id,
 			COALESCE(u.email, '') AS owner_email,
 			COALESCE(u.username, '') AS owner_username
 		FROM carpool_pools p
@@ -383,7 +383,7 @@ func (r *carpoolRepository) ListOwnedPools(ctx context.Context, ownerUserID int6
 			COALESCE((SELECT COUNT(*) FROM carpool_pool_accounts pa WHERE pa.pool_id = p.id), 0) AS bound_account_count,
 			TRUE AS is_owner,
 			'owner' AS current_user_status,
-			NULL::bigint AS current_user_request_id
+			NULL AS current_user_request_id
 		FROM carpool_pools p
 		LEFT JOIN groups g ON g.id = p.group_id
 		WHERE p.owner_user_id = ? AND p.deleted_at IS NULL
@@ -406,7 +406,7 @@ func (r *carpoolRepository) ListJoinedPools(ctx context.Context, userID int64) (
 			COALESCE((SELECT COUNT(*) FROM carpool_pool_accounts pa WHERE pa.pool_id = p.id), 0) AS bound_account_count,
 			FALSE AS is_owner,
 			m.status AS current_user_status,
-			NULL::bigint AS current_user_request_id
+			NULL AS current_user_request_id
 		FROM carpool_members m
 		INNER JOIN carpool_pools p ON p.id = m.pool_id
 		LEFT JOIN groups g ON g.id = p.group_id
