@@ -1,8 +1,8 @@
 name: Security Scan
 
 on:
-  push:
-  pull_request:
+  # push:  # disabled: creates failed runs
+  # pull_request:  # disabled
   schedule:
     - cron: '0 3 * * 1'
 
