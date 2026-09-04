@@ -193,8 +193,8 @@ func (r *groupRepository) CreateFromSource(ctx context.Context, groupIn *service
 		   AND a.deleted_at IS NULL
 		   AND (NOT ? OR a.type <> ?)
 		 ON DUPLICATE KEY UPDATE id=id`,
-		sourceGroupID,
 		groupIn.ID,
+		sourceGroupID,
 		groupIn.RequireOAuthOnly,
 		service.AccountTypeAPIKey,
 	)
