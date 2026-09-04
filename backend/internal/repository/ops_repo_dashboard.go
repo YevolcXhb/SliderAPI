@@ -5,12 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/Wei-Shaw/sub2api/internal/service"
 	"math"
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
 const (
@@ -28,12 +27,10 @@ func (r *opsRepository) GetDashboardOverview(ctx context.Context, filter *servic
 	if filter.StartTime.IsZero() || filter.EndTime.IsZero() {
 		return nil, fmt.Errorf("start_time/end_time required")
 	}
-
 	mode := filter.QueryMode
 	if !mode.IsValid() {
 		mode = service.OpsQueryModeRaw
 	}
-
 	switch mode {
 	case service.OpsQueryModePreagg:
 		return r.getDashboardOverviewPreaggregated(ctx, filter)
@@ -47,17 +44,14 @@ func (r *opsRepository) GetDashboardOverview(ctx context.Context, filter *servic
 		return r.getDashboardOverviewRaw(ctx, filter)
 	}
 }
-
 func (r *opsRepository) getDashboardOverviewRaw(ctx context.Context, filter *service.OpsDashboardFilter) (*service.OpsDashboardOverview, error) {
 	start := filter.StartTime.UTC()
 	end := filter.EndTime.UTC()
 	degraded := false
-
 	successCount, tokenConsumed, err := r.queryUsageCounts(ctx, filter, start, end)
 	if err != nil {
 		return nil, err
 	}
-
 	latencyCtx, cancelLatency := context.WithTimeout(ctx, opsRawLatencyQueryTimeout)
 	duration, ttft, _, err := r.queryUsageLatency(latencyCtx, filter, start, end)
 	cancelLatency()
@@ -70,24 +64,19 @@ func (r *opsRepository) getDashboardOverviewRaw(ctx context.Context, filter *ser
 			return nil, err
 		}
 	}
-
 	errorTotal, businessLimited, errorCountSLA, upstreamExcl, upstream429, upstream529, err := r.queryErrorCounts(ctx, filter, start, end)
 	if err != nil {
 		return nil, err
 	}
-
 	windowSeconds := end.Sub(start).Seconds()
 	if windowSeconds <= 0 {
 		windowSeconds = 1
 	}
-
 	requestCountTotal := successCount + errorTotal
 	requestCountSLA := successCount + errorCountSLA
-
 	sla := safeDivideFloat64(float64(successCount), float64(requestCountSLA))
 	errorRate := safeDivideFloat64(float64(errorCountSLA), float64(requestCountSLA))
 	upstreamErrorRate := safeDivideFloat64(float64(upstreamExcl), float64(requestCountSLA))
-
 	qpsCurrent, tpsCurrent, err := r.queryCurrentRates(ctx, filter, end)
 	if err != nil {
 		if isQueryTimeoutErr(err) {
@@ -96,7 +85,6 @@ func (r *opsRepository) getDashboardOverviewRaw(ctx context.Context, filter *ser
 			return nil, err
 		}
 	}
-
 	peakCtx, cancelPeak := context.WithTimeout(ctx, opsRawPeakQueryTimeout)
 	qpsPeak, tpsPeak, err := r.queryPeakRates(peakCtx, filter, start, end)
 	cancelPeak()
@@ -107,7 +95,6 @@ func (r *opsRepository) getDashboardOverviewRaw(ctx context.Context, filter *ser
 			return nil, err
 		}
 	}
-
 	qpsAvg := roundTo1DP(float64(requestCountTotal) / windowSeconds)
 	tpsAvg := roundTo1DP(float64(tokenConsumed) / windowSeconds)
 	if degraded {
@@ -124,28 +111,24 @@ func (r *opsRepository) getDashboardOverviewRaw(ctx context.Context, filter *ser
 			tpsPeak = roundTo1DP(math.Max(tpsCurrent, tpsAvg))
 		}
 	}
-
 	return &service.OpsDashboardOverview{
-		StartTime: start,
-		EndTime:   end,
-		Platform:  strings.TrimSpace(filter.Platform),
-		GroupID:   filter.GroupID,
-
-		SuccessCount:         successCount,
-		ErrorCountTotal:      errorTotal,
-		BusinessLimitedCount: businessLimited,
-		ErrorCountSLA:        errorCountSLA,
-		RequestCountTotal:    requestCountTotal,
-		RequestCountSLA:      requestCountSLA,
-		TokenConsumed:        tokenConsumed,
-
+		StartTime:                    start,
+		EndTime:                      end,
+		Platform:                     strings.TrimSpace(filter.Platform),
+		GroupID:                      filter.GroupID,
+		SuccessCount:                 successCount,
+		ErrorCountTotal:              errorTotal,
+		BusinessLimitedCount:         businessLimited,
+		ErrorCountSLA:                errorCountSLA,
+		RequestCountTotal:            requestCountTotal,
+		RequestCountSLA:              requestCountSLA,
+		TokenConsumed:                tokenConsumed,
 		SLA:                          roundTo4DP(sla),
 		ErrorRate:                    roundTo4DP(errorRate),
 		UpstreamErrorRate:            roundTo4DP(upstreamErrorRate),
 		UpstreamErrorCountExcl429529: upstreamExcl,
 		Upstream429Count:             upstream429,
 		Upstream529Count:             upstream529,
-
 		QPS: service.OpsRateSummary{
 			Current: qpsCurrent,
 			Peak:    qpsPeak,
@@ -156,47 +139,39 @@ func (r *opsRepository) getDashboardOverviewRaw(ctx context.Context, filter *ser
 			Peak:    tpsPeak,
 			Avg:     tpsAvg,
 		},
-
 		Duration: duration,
 		TTFT:     ttft,
 	}, nil
 }
 
 type opsDashboardPartial struct {
-	successCount         int64
-	ttftSampleCount      int64
-	errorCountTotal      int64
-	businessLimitedCount int64
-	errorCountSLA        int64
-
+	successCount                 int64
+	ttftSampleCount              int64
+	errorCountTotal              int64
+	businessLimitedCount         int64
+	errorCountSLA                int64
 	upstreamErrorCountExcl429529 int64
 	upstream429Count             int64
 	upstream529Count             int64
-
-	tokenConsumed int64
-
-	duration service.OpsPercentiles
-	ttft     service.OpsPercentiles
+	tokenConsumed                int64
+	duration                     service.OpsPercentiles
+	ttft                         service.OpsPercentiles
 }
 
 func (r *opsRepository) getDashboardOverviewPreaggregated(ctx context.Context, filter *service.OpsDashboardFilter) (*service.OpsDashboardOverview, error) {
 	if filter == nil {
 		return nil, fmt.Errorf("nil filter")
 	}
-
 	start := filter.StartTime.UTC()
 	end := filter.EndTime.UTC()
-
 	// Stable full-hour range covered by pre-aggregation.
 	aggSafeEnd := preaggSafeEnd(end)
 	aggFullStart := utcCeilToHour(start)
 	aggFullEnd := utcFloorToHour(aggSafeEnd)
-
 	// If there are no stable full-hour buckets, use raw directly (short windows).
 	if !aggFullStart.Before(aggFullEnd) {
 		return r.getDashboardOverviewRaw(ctx, filter)
 	}
-
 	// 1) Pre-aggregated stable segment.
 	preaggRows, err := r.listHourlyMetricsRows(ctx, filter, aggFullStart, aggFullEnd)
 	if err != nil {
@@ -209,11 +184,9 @@ func (r *opsRepository) getDashboardOverviewPreaggregated(ctx context.Context, f
 		}
 	}
 	preagg := aggregateHourlyRows(preaggRows)
-
 	// 2) Raw head/tail fragments (at most ~1 hour each).
 	head := opsDashboardPartial{}
 	tail := opsDashboardPartial{}
-
 	if start.Before(aggFullStart) {
 		part, err := r.queryRawPartial(ctx, filter, start, minTime(end, aggFullStart))
 		if err != nil {
@@ -228,19 +201,15 @@ func (r *opsRepository) getDashboardOverviewPreaggregated(ctx context.Context, f
 		}
 		tail = *part
 	}
-
 	// Merge counts.
 	successCount := preagg.successCount + head.successCount + tail.successCount
 	errorTotal := preagg.errorCountTotal + head.errorCountTotal + tail.errorCountTotal
 	businessLimited := preagg.businessLimitedCount + head.businessLimitedCount + tail.businessLimitedCount
 	errorCountSLA := preagg.errorCountSLA + head.errorCountSLA + tail.errorCountSLA
-
 	upstreamExcl := preagg.upstreamErrorCountExcl429529 + head.upstreamErrorCountExcl429529 + tail.upstreamErrorCountExcl429529
 	upstream429 := preagg.upstream429Count + head.upstream429Count + tail.upstream429Count
 	upstream529 := preagg.upstream529Count + head.upstream529Count + tail.upstream529Count
-
 	tokenConsumed := preagg.tokenConsumed + head.tokenConsumed + tail.tokenConsumed
-
 	// Approximate percentiles across segments:
 	// - p50/p90/avg: weighted average by success_count
 	// - p95/p99/max: max (conservative tail)
@@ -256,20 +225,16 @@ func (r *opsRepository) getDashboardOverviewPreaggregated(ctx context.Context, f
 		{weight: head.ttftSampleCount, p: head.ttft},
 		{weight: tail.ttftSampleCount, p: tail.ttft},
 	})
-
 	windowSeconds := end.Sub(start).Seconds()
 	if windowSeconds <= 0 {
 		windowSeconds = 1
 	}
-
 	requestCountTotal := successCount + errorTotal
 	requestCountSLA := successCount + errorCountSLA
-
 	sla := safeDivideFloat64(float64(successCount), float64(requestCountSLA))
 	errorRate := safeDivideFloat64(float64(errorCountSLA), float64(requestCountSLA))
 	upstreamErrorRate := safeDivideFloat64(float64(upstreamExcl), float64(requestCountSLA))
 	degraded := false
-
 	// Keep "current" rates as raw, to preserve realtime semantics.
 	qpsCurrent, tpsCurrent, err := r.queryCurrentRates(ctx, filter, end)
 	if err != nil {
@@ -279,7 +244,6 @@ func (r *opsRepository) getDashboardOverviewPreaggregated(ctx context.Context, f
 			return nil, err
 		}
 	}
-
 	peakCtx, cancelPeak := context.WithTimeout(ctx, opsRawPeakQueryTimeout)
 	qpsPeak, tpsPeak, err := r.queryPeakRates(peakCtx, filter, start, end)
 	cancelPeak()
@@ -290,7 +254,6 @@ func (r *opsRepository) getDashboardOverviewPreaggregated(ctx context.Context, f
 			return nil, err
 		}
 	}
-
 	qpsAvg := roundTo1DP(float64(requestCountTotal) / windowSeconds)
 	tpsAvg := roundTo1DP(float64(tokenConsumed) / windowSeconds)
 	if degraded {
@@ -307,28 +270,24 @@ func (r *opsRepository) getDashboardOverviewPreaggregated(ctx context.Context, f
 			tpsPeak = roundTo1DP(math.Max(tpsCurrent, tpsAvg))
 		}
 	}
-
 	return &service.OpsDashboardOverview{
-		StartTime: start,
-		EndTime:   end,
-		Platform:  strings.TrimSpace(filter.Platform),
-		GroupID:   filter.GroupID,
-
-		SuccessCount:         successCount,
-		ErrorCountTotal:      errorTotal,
-		BusinessLimitedCount: businessLimited,
-		ErrorCountSLA:        errorCountSLA,
-		RequestCountTotal:    requestCountTotal,
-		RequestCountSLA:      requestCountSLA,
-		TokenConsumed:        tokenConsumed,
-
+		StartTime:                    start,
+		EndTime:                      end,
+		Platform:                     strings.TrimSpace(filter.Platform),
+		GroupID:                      filter.GroupID,
+		SuccessCount:                 successCount,
+		ErrorCountTotal:              errorTotal,
+		BusinessLimitedCount:         businessLimited,
+		ErrorCountSLA:                errorCountSLA,
+		RequestCountTotal:            requestCountTotal,
+		RequestCountSLA:              requestCountSLA,
+		TokenConsumed:                tokenConsumed,
 		SLA:                          roundTo4DP(sla),
 		ErrorRate:                    roundTo4DP(errorRate),
 		UpstreamErrorRate:            roundTo4DP(upstreamErrorRate),
 		UpstreamErrorCountExcl429529: upstreamExcl,
 		Upstream429Count:             upstream429,
 		Upstream529Count:             upstream529,
-
 		QPS: service.OpsRateSummary{
 			Current: qpsCurrent,
 			Peak:    qpsPeak,
@@ -339,40 +298,34 @@ func (r *opsRepository) getDashboardOverviewPreaggregated(ctx context.Context, f
 			Peak:    tpsPeak,
 			Avg:     tpsAvg,
 		},
-
 		Duration: duration,
 		TTFT:     ttft,
 	}, nil
 }
 
 type opsHourlyMetricsRow struct {
-	bucketStart time.Time
-
-	successCount         int64
-	ttftSampleCount      int64
-	errorCountTotal      int64
-	businessLimitedCount int64
-	errorCountSLA        int64
-
+	bucketStart                  time.Time
+	successCount                 int64
+	ttftSampleCount              int64
+	errorCountTotal              int64
+	businessLimitedCount         int64
+	errorCountSLA                int64
 	upstreamErrorCountExcl429529 int64
 	upstream429Count             int64
 	upstream529Count             int64
-
-	tokenConsumed int64
-
-	durationP50 sql.NullInt64
-	durationP90 sql.NullInt64
-	durationP95 sql.NullInt64
-	durationP99 sql.NullInt64
-	durationAvg sql.NullFloat64
-	durationMax sql.NullInt64
-
-	ttftP50 sql.NullInt64
-	ttftP90 sql.NullInt64
-	ttftP95 sql.NullInt64
-	ttftP99 sql.NullInt64
-	ttftAvg sql.NullFloat64
-	ttftMax sql.NullInt64
+	tokenConsumed                int64
+	durationP50                  sql.NullInt64
+	durationP90                  sql.NullInt64
+	durationP95                  sql.NullInt64
+	durationP99                  sql.NullInt64
+	durationAvg                  sql.NullFloat64
+	durationMax                  sql.NullInt64
+	ttftP50                      sql.NullInt64
+	ttftP90                      sql.NullInt64
+	ttftP95                      sql.NullInt64
+	ttftP99                      sql.NullInt64
+	ttftAvg                      sql.NullFloat64
+	ttftMax                      sql.NullInt64
 }
 
 func (r *opsRepository) listHourlyMetricsRows(ctx context.Context, filter *service.OpsDashboardFilter, start, end time.Time) ([]opsHourlyMetricsRow, error) {
@@ -382,23 +335,18 @@ func (r *opsRepository) listHourlyMetricsRows(ctx context.Context, filter *servi
 	if start.IsZero() || end.IsZero() || !start.Before(end) {
 		return []opsHourlyMetricsRow{}, nil
 	}
-
 	where := "bucket_start >= ? AND bucket_start < ?"
 	args := []any{start.UTC(), end.UTC()}
-	idx := 3
-
 	platform := ""
 	groupID := (*int64)(nil)
 	if filter != nil {
 		platform = strings.TrimSpace(strings.ToLower(filter.Platform))
 		groupID = filter.GroupID
 	}
-
 	switch {
 	case groupID != nil && *groupID > 0:
 		where += " AND group_id = ?"
 		args = append(args, *groupID)
-		idx++
 		if platform != "" {
 			where += " AND platform = ?"
 			args = append(args, platform)
@@ -411,7 +359,6 @@ func (r *opsRepository) listHourlyMetricsRows(ctx context.Context, filter *servi
 	default:
 		where += " AND platform IS NULL AND group_id IS NULL"
 	}
-
 	q := `
 SELECT
   bucket_start,
@@ -439,13 +386,11 @@ SELECT
 FROM ops_metrics_hourly
 WHERE ` + where + `
 ORDER BY bucket_start ASC`
-
 	rows, err := r.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
-
 	out := make([]opsHourlyMetricsRow, 0, 64)
 	for rows.Next() {
 		var row opsHourlyMetricsRow
@@ -482,13 +427,11 @@ ORDER BY bucket_start ASC`
 	}
 	return out, nil
 }
-
 func aggregateHourlyRows(rows []opsHourlyMetricsRow) opsDashboardPartial {
 	out := opsDashboardPartial{}
 	if len(rows) == 0 {
 		return out
 	}
-
 	var (
 		p50Sum float64
 		p50W   int64
@@ -505,30 +448,24 @@ func aggregateHourlyRows(rows []opsHourlyMetricsRow) opsDashboardPartial {
 		ttftAvgSum float64
 		ttftAvgW   int64
 	)
-
 	var (
-		p95Max *int
-		p99Max *int
-		maxMax *int
-
+		p95Max     *int
+		p99Max     *int
+		maxMax     *int
 		ttftP95Max *int
 		ttftP99Max *int
 		ttftMaxMax *int
 	)
-
 	for _, row := range rows {
 		out.successCount += row.successCount
 		out.ttftSampleCount += row.ttftSampleCount
 		out.errorCountTotal += row.errorCountTotal
 		out.businessLimitedCount += row.businessLimitedCount
 		out.errorCountSLA += row.errorCountSLA
-
 		out.upstreamErrorCountExcl429529 += row.upstreamErrorCountExcl429529
 		out.upstream429Count += row.upstream429Count
 		out.upstream529Count += row.upstream529Count
-
 		out.tokenConsumed += row.tokenConsumed
-
 		if row.successCount > 0 {
 			if row.durationP50.Valid {
 				p50Sum += float64(row.durationP50.Int64) * float64(row.successCount)
@@ -543,7 +480,6 @@ func aggregateHourlyRows(rows []opsHourlyMetricsRow) opsDashboardPartial {
 				avgW += row.successCount
 			}
 		}
-
 		// TTFT is weighted by ttftSampleCount (streaming rows only), NOT
 		// successCount: first_token_ms is recorded only for streaming requests,
 		// so weighting by total successes dilutes the merged TTFT figures.
@@ -561,7 +497,6 @@ func aggregateHourlyRows(rows []opsHourlyMetricsRow) opsDashboardPartial {
 				ttftAvgW += row.ttftSampleCount
 			}
 		}
-
 		if row.durationP95.Valid {
 			v := int(row.durationP95.Int64)
 			if p95Max == nil || v > *p95Max {
@@ -580,7 +515,6 @@ func aggregateHourlyRows(rows []opsHourlyMetricsRow) opsDashboardPartial {
 				maxMax = &v
 			}
 		}
-
 		if row.ttftP95.Valid {
 			v := int(row.ttftP95.Int64)
 			if ttftP95Max == nil || v > *ttftP95Max {
@@ -600,7 +534,6 @@ func aggregateHourlyRows(rows []opsHourlyMetricsRow) opsDashboardPartial {
 			}
 		}
 	}
-
 	// duration
 	if p50W > 0 {
 		v := int(math.Round(p50Sum / float64(p50W)))
@@ -617,7 +550,6 @@ func aggregateHourlyRows(rows []opsHourlyMetricsRow) opsDashboardPartial {
 		out.duration.Avg = &v
 	}
 	out.duration.Max = maxMax
-
 	// ttft
 	if ttftP50W > 0 {
 		v := int(math.Round(ttftP50Sum / float64(ttftP50W)))
@@ -634,16 +566,13 @@ func aggregateHourlyRows(rows []opsHourlyMetricsRow) opsDashboardPartial {
 		out.ttft.Avg = &v
 	}
 	out.ttft.Max = ttftMaxMax
-
 	return out
 }
-
 func (r *opsRepository) queryRawPartial(ctx context.Context, filter *service.OpsDashboardFilter, start, end time.Time) (*opsDashboardPartial, error) {
 	successCount, tokenConsumed, err := r.queryUsageCounts(ctx, filter, start, end)
 	if err != nil {
 		return nil, err
 	}
-
 	latencyCtx, cancelLatency := context.WithTimeout(ctx, opsRawLatencyQueryTimeout)
 	duration, ttft, ttftSampleCount, err := r.queryUsageLatency(latencyCtx, filter, start, end)
 	cancelLatency()
@@ -656,12 +585,10 @@ func (r *opsRepository) queryRawPartial(ctx context.Context, filter *service.Ops
 			return nil, err
 		}
 	}
-
 	errorTotal, businessLimited, errorCountSLA, upstreamExcl, upstream429, upstream529, err := r.queryErrorCounts(ctx, filter, start, end)
 	if err != nil {
 		return nil, err
 	}
-
 	return &opsDashboardPartial{
 		successCount:                 successCount,
 		ttftSampleCount:              ttftSampleCount,
@@ -676,7 +603,6 @@ func (r *opsRepository) queryRawPartial(ctx context.Context, filter *service.Ops
 		ttft:                         ttft,
 	}, nil
 }
-
 func (r *opsRepository) rawOpsDataExists(ctx context.Context, filter *service.OpsDashboardFilter, start, end time.Time) (bool, error) {
 	{
 		join, where, args, _ := buildUsageWhere(filter, start, end, 1)
@@ -689,7 +615,6 @@ func (r *opsRepository) rawOpsDataExists(ctx context.Context, filter *service.Op
 			return true, nil
 		}
 	}
-
 	{
 		where, args, _ := buildErrorWhere(filter, start, end, 1)
 		q := `SELECT EXISTS(SELECT 1 FROM ops_error_logs ` + where + ` LIMIT 1)`
@@ -727,7 +652,6 @@ func combineApproxPercentiles(segments []opsPercentileSegment) service.OpsPercen
 		out := int(math.Round(sum / float64(w)))
 		return &out
 	}
-
 	maxInt := func(get func(service.OpsPercentiles) *int) *int {
 		var max *int
 		for _, seg := range segments {
@@ -742,7 +666,6 @@ func combineApproxPercentiles(segments []opsPercentileSegment) service.OpsPercen
 		}
 		return max
 	}
-
 	return service.OpsPercentiles{
 		P50: weightedInt(func(p service.OpsPercentiles) *int { return p.P50 }),
 		P90: weightedInt(func(p service.OpsPercentiles) *int { return p.P90 }),
@@ -752,7 +675,6 @@ func combineApproxPercentiles(segments []opsPercentileSegment) service.OpsPercen
 		Max: maxInt(func(p service.OpsPercentiles) *int { return p.Max }),
 	}
 }
-
 func preaggSafeEnd(endTime time.Time) time.Time {
 	now := time.Now().UTC()
 	cutoff := now.Add(-5 * time.Minute)
@@ -761,7 +683,6 @@ func preaggSafeEnd(endTime time.Time) time.Time {
 	}
 	return endTime
 }
-
 func utcCeilToHour(t time.Time) time.Time {
 	u := t.UTC()
 	f := u.Truncate(time.Hour)
@@ -770,28 +691,23 @@ func utcCeilToHour(t time.Time) time.Time {
 	}
 	return f.Add(time.Hour)
 }
-
 func utcFloorToHour(t time.Time) time.Time {
 	return t.UTC().Truncate(time.Hour)
 }
-
 func minTime(a, b time.Time) time.Time {
 	if a.Before(b) {
 		return a
 	}
 	return b
 }
-
 func maxTime(a, b time.Time) time.Time {
 	if a.After(b) {
 		return a
 	}
 	return b
 }
-
 func (r *opsRepository) queryUsageCounts(ctx context.Context, filter *service.OpsDashboardFilter, start, end time.Time) (successCount int64, tokenConsumed int64, err error) {
 	join, where, args, _ := buildUsageWhere(filter, start, end, 1)
-
 	q := `
 SELECT
   COALESCE(COUNT(*), 0) AS success_count,
@@ -799,7 +715,6 @@ SELECT
 FROM usage_logs ul
 ` + join + `
 ` + where
-
 	var tokens sql.NullInt64
 	if err := r.db.QueryRowContext(ctx, q, args...).Scan(&successCount, &tokens); err != nil {
 		return 0, 0, err
@@ -809,10 +724,8 @@ FROM usage_logs ul
 	}
 	return successCount, tokenConsumed, nil
 }
-
 func (r *opsRepository) queryUsageLatency(ctx context.Context, filter *service.OpsDashboardFilter, start, end time.Time) (duration service.OpsPercentiles, ttft service.OpsPercentiles, ttftSampleCount int64, err error) {
 	join, where, args, _ := buildUsageWhere(filter, start, end, 1)
-
 	// MariaDB 10.11 has no percentile_cont; compute percentiles in Go from the
 	// raw samples (PostgreSQL-compatible continuous interpolation).
 	q := `
@@ -820,13 +733,11 @@ SELECT duration_ms, first_token_ms
 FROM usage_logs ul
 ` + join + `
 ` + where
-
 	rows, err := r.db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return service.OpsPercentiles{}, service.OpsPercentiles{}, 0, err
 	}
 	defer func() { _ = rows.Close() }()
-
 	var durations, ttfts []float64
 	var dSum, tSum float64
 	var dMax, tMax float64
@@ -856,10 +767,8 @@ FROM usage_logs ul
 	if err := rows.Err(); err != nil {
 		return service.OpsPercentiles{}, service.OpsPercentiles{}, 0, err
 	}
-
 	sort.Float64s(durations)
 	sort.Float64s(ttfts)
-
 	duration.P50 = opsFloatToIntPtr(opsPercentileValue(durations, 0.50))
 	duration.P90 = opsFloatToIntPtr(opsPercentileValue(durations, 0.90))
 	duration.P95 = opsFloatToIntPtr(opsPercentileValue(durations, 0.95))
@@ -870,7 +779,6 @@ FROM usage_logs ul
 		v := int(dMax)
 		duration.Max = &v
 	}
-
 	ttft.P50 = opsFloatToIntPtr(opsPercentileValue(ttfts, 0.50))
 	ttft.P90 = opsFloatToIntPtr(opsPercentileValue(ttfts, 0.90))
 	ttft.P95 = opsFloatToIntPtr(opsPercentileValue(ttfts, 0.95))
@@ -881,10 +789,8 @@ FROM usage_logs ul
 		v := int(tMax)
 		ttft.Max = &v
 	}
-
 	return duration, ttft, tCount, nil
 }
-
 func (r *opsRepository) queryErrorCounts(ctx context.Context, filter *service.OpsDashboardFilter, start, end time.Time) (
 	errorTotal int64,
 	businessLimited int64,
@@ -895,7 +801,6 @@ func (r *opsRepository) queryErrorCounts(ctx context.Context, filter *service.Op
 	err error,
 ) {
 	where, args, _ := buildErrorWhere(filter, start, end, 1)
-
 	q := `
 SELECT
   COALESCE(SUM(CASE WHEN COALESCE(status_code, 0) >= 400 THEN 1 ELSE 0 END), 0) AS error_total,
@@ -906,7 +811,6 @@ SELECT
   COALESCE(SUM(CASE WHEN error_owner = 'provider' AND NOT is_business_limited AND COALESCE(upstream_status_code, status_code, 0) = 529 THEN 1 ELSE 0 END), 0) AS upstream_529
 FROM ops_error_logs
 ` + where
-
 	if err := r.db.QueryRowContext(ctx, q, args...).Scan(
 		&errorTotal,
 		&businessLimited,
@@ -919,10 +823,8 @@ FROM ops_error_logs
 	}
 	return errorTotal, businessLimited, errorCountSLA, upstreamExcl429529, upstream429, upstream529, nil
 }
-
 func (r *opsRepository) queryCurrentRates(ctx context.Context, filter *service.OpsDashboardFilter, end time.Time) (qpsCurrent float64, tpsCurrent float64, err error) {
 	windowStart := end.Add(-1 * time.Minute)
-
 	successCount1m, token1m, err := r.queryUsageCounts(ctx, filter, windowStart, end)
 	if err != nil {
 		return 0, 0, err
@@ -931,16 +833,13 @@ func (r *opsRepository) queryCurrentRates(ctx context.Context, filter *service.O
 	if err != nil {
 		return 0, 0, err
 	}
-
 	qpsCurrent = roundTo1DP(float64(successCount1m+errorCount1m) / 60.0)
 	tpsCurrent = roundTo1DP(float64(token1m) / 60.0)
 	return qpsCurrent, tpsCurrent, nil
 }
-
 func (r *opsRepository) queryPeakRates(ctx context.Context, filter *service.OpsDashboardFilter, start, end time.Time) (qpsPeak float64, tpsPeak float64, err error) {
 	usageJoin, usageWhere, usageArgs, next := buildUsageWhere(filter, start, end, 1)
 	errorWhere, errorArgs, _ := buildErrorWhere(filter, start, end, next)
-
 	q := `
 WITH usage_buckets AS (
   SELECT
@@ -977,9 +876,7 @@ SELECT
   COALESCE(MAX(total_req), 0) AS max_req_per_min,
   COALESCE(MAX(total_tokens), 0) AS max_tokens_per_min
 FROM combined`
-
 	args := append(usageArgs, errorArgs...)
-
 	var maxReqPerMinute, maxTokensPerMinute sql.NullInt64
 	if err := r.db.QueryRowContext(ctx, q, args...).Scan(&maxReqPerMinute, &maxTokensPerMinute); err != nil {
 		return 0, 0, err
@@ -992,11 +889,9 @@ FROM combined`
 	}
 	return qpsPeak, tpsPeak, nil
 }
-
 func isQueryTimeoutErr(err error) bool {
 	return errors.Is(err, context.DeadlineExceeded)
 }
-
 func buildUsageWhere(filter *service.OpsDashboardFilter, start, end time.Time, startIndex int) (join string, where string, args []any, nextIndex int) {
 	platform := ""
 	groupID := (*int64)(nil)
@@ -1004,18 +899,15 @@ func buildUsageWhere(filter *service.OpsDashboardFilter, start, end time.Time, s
 		platform = strings.TrimSpace(strings.ToLower(filter.Platform))
 		groupID = filter.GroupID
 	}
-
 	idx := startIndex
 	clauses := make([]string, 0, 4)
 	args = make([]any, 0, 4)
-
 	args = append(args, start)
 	clauses = append(clauses, "ul.created_at >= ?")
 	idx++
 	args = append(args, end)
 	clauses = append(clauses, "ul.created_at < ?")
 	idx++
-
 	if groupID != nil && *groupID > 0 {
 		args = append(args, *groupID)
 		clauses = append(clauses, "ul.group_id = ?")
@@ -1029,11 +921,9 @@ func buildUsageWhere(filter *service.OpsDashboardFilter, start, end time.Time, s
 		clauses = append(clauses, "COALESCE(NULLIF(g.platform,''), a.platform) = ?")
 		idx++
 	}
-
 	where = "WHERE " + strings.Join(clauses, " AND ")
 	return join, where, args, idx
 }
-
 func buildErrorWhere(filter *service.OpsDashboardFilter, start, end time.Time, startIndex int) (where string, args []any, nextIndex int) {
 	platform := ""
 	groupID := (*int64)(nil)
@@ -1041,20 +931,16 @@ func buildErrorWhere(filter *service.OpsDashboardFilter, start, end time.Time, s
 		platform = strings.TrimSpace(strings.ToLower(filter.Platform))
 		groupID = filter.GroupID
 	}
-
 	idx := startIndex
 	clauses := make([]string, 0, 5)
 	args = make([]any, 0, 5)
-
 	args = append(args, start)
 	clauses = append(clauses, "created_at >= ?")
 	idx++
 	args = append(args, end)
 	clauses = append(clauses, "created_at < ?")
 	idx++
-
 	clauses = append(clauses, "is_count_tokens = FALSE")
-
 	if groupID != nil && *groupID > 0 {
 		args = append(args, *groupID)
 		clauses = append(clauses, "group_id = ?")
@@ -1065,11 +951,9 @@ func buildErrorWhere(filter *service.OpsDashboardFilter, start, end time.Time, s
 		clauses = append(clauses, "platform = ?")
 		idx++
 	}
-
 	where = "WHERE " + strings.Join(clauses, " AND ")
 	return where, args, idx
 }
-
 func floatToIntPtr(v sql.NullFloat64) *int {
 	if !v.Valid {
 		return nil
@@ -1077,25 +961,21 @@ func floatToIntPtr(v sql.NullFloat64) *int {
 	n := int(math.Round(v.Float64))
 	return &n
 }
-
 func opsFloatToIntPtr(v *float64) *int {
 	if v == nil {
 		return nil
 	}
 	return floatToIntPtr(sql.NullFloat64{Float64: *v, Valid: true})
 }
-
 func safeDivideFloat64(numerator float64, denominator float64) float64 {
 	if denominator == 0 {
 		return 0
 	}
 	return numerator / denominator
 }
-
 func roundTo1DP(v float64) float64 {
 	return math.Round(v*10) / 10
 }
-
 func roundTo4DP(v float64) float64 {
 	return math.Round(v*10000) / 10000
 }

@@ -288,6 +288,7 @@ func (h *UserAccountHandler) ApplyCarpool(c *gin.Context) {
 		"note":    req.Note,
 	}, service.DefaultWriteIdempotencyTTL(), func(ctx context.Context) (any, error) {
 		item, err := h.carpoolService.Apply(ctx, subject.UserID, poolID, service.ApplyCarpoolPoolRequest{
+			//nolint:staticcheck // SA4023: stub implementation always returns error
 			Note: strings.TrimSpace(req.Note),
 		})
 		if err != nil {

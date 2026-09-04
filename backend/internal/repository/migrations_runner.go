@@ -709,26 +709,26 @@ func splitSQLStatementsMySQL(content string) []string {
 
 		// 注释状态优先处理
 		if inLineComment {
-			buf.WriteRune(c)
+			_, _ = buf.WriteRune(c)
 			if c == '\n' {
 				inLineComment = false
 			}
 			continue
 		}
 		if inBlockComment {
-			buf.WriteRune(c)
+			_, _ = buf.WriteRune(c)
 			if c == '*' && i+1 < n && runes[i+1] == '/' {
-				buf.WriteRune(runes[i+1])
+				_, _ = buf.WriteRune(runes[i+1])
 				i++
 				inBlockComment = false
 			}
 			continue
 		}
 		if inSingle {
-			buf.WriteRune(c)
+			_, _ = buf.WriteRune(c)
 			if c == '\'' {
 				if i+1 < n && runes[i+1] == '\'' { // '' 转义
-					buf.WriteRune(runes[i+1])
+					_, _ = buf.WriteRune(runes[i+1])
 					i++
 				} else {
 					inSingle = false
@@ -737,23 +737,23 @@ func splitSQLStatementsMySQL(content string) []string {
 			continue
 		}
 		if inDouble {
-			buf.WriteRune(c)
+			_, _ = buf.WriteRune(c)
 			if c == '"' {
 				inDouble = false
 			}
 			continue
 		}
 		if inBacktick {
-			buf.WriteRune(c)
+			_, _ = buf.WriteRune(c)
 			if c == '`' {
 				inBacktick = false
 			}
 			continue
 		}
 		if inDollar {
-			buf.WriteRune(c)
+			_, _ = buf.WriteRune(c)
 			if c == '$' && i+1 < n && runes[i+1] == '$' {
-				buf.WriteRune(runes[i+1])
+				_, _ = buf.WriteRune(runes[i+1])
 				i++
 				inDollar = false
 			}
@@ -763,35 +763,35 @@ func splitSQLStatementsMySQL(content string) []string {
 		// 进入注释 / 字符串 / dollar
 		if c == '-' && i+1 < n && runes[i+1] == '-' {
 			inLineComment = true
-			buf.WriteRune(c)
+			_, _ = buf.WriteRune(c)
 			continue
 		}
 		if c == '/' && i+1 < n && runes[i+1] == '*' {
 			inBlockComment = true
-			buf.WriteRune(c)
-			buf.WriteRune(runes[i+1])
+			_, _ = buf.WriteRune(c)
+			_, _ = buf.WriteRune(runes[i+1])
 			i++
 			continue
 		}
 		if c == '\'' {
 			inSingle = true
-			buf.WriteRune(c)
+			_, _ = buf.WriteRune(c)
 			continue
 		}
 		if c == '"' {
 			inDouble = true
-			buf.WriteRune(c)
+			_, _ = buf.WriteRune(c)
 			continue
 		}
 		if c == '`' {
 			inBacktick = true
-			buf.WriteRune(c)
+			_, _ = buf.WriteRune(c)
 			continue
 		}
 		if c == '$' && i+1 < n && runes[i+1] == '$' {
 			inDollar = true
-			buf.WriteRune(c)
-			buf.WriteRune(runes[i+1])
+			_, _ = buf.WriteRune(c)
+			_, _ = buf.WriteRune(runes[i+1])
 			i++
 			continue
 		}
@@ -885,7 +885,7 @@ func splitSQLStatementsMySQL(content string) []string {
 			continue
 		}
 
-		buf.WriteRune(c)
+		_, _ = buf.WriteRune(c)
 	}
 
 	if strings.TrimSpace(buf.String()) != "" {

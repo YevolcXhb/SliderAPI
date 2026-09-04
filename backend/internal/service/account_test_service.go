@@ -345,8 +345,9 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 	return s.testClaudeAccountConnection(c, account, modelID)
 }
 
-// testKiroAccountConnection 测试 Kiro 账号连通性。
-// Kiro 上游只提供 chat completions，因此 APIKey 账号复用 OpenAI 兼容的
+// testKiroAccountConnection tests Kiro account connectivity.
+// Kiro upstream only supports chat completions, so APIKey accounts reuse OpenAI-compatible
+// chat completions test path; base_url must be explicitly configured (Kiro has no public default endpoint).
 // chat completions 测试路径；base_url 必须显式配置（Kiro 无公有默认端点）。
 func (s *AccountTestService) testKiroAccountConnection(c *gin.Context, account *Account, modelID string, prompt string) error {
 	testModelID := strings.TrimSpace(modelID)
@@ -519,7 +520,7 @@ func (s *AccountTestService) ensureKiroOAuthAccessToken(ctx context.Context, acc
 		if token := strings.TrimSpace(account.GetCredential("access_token")); token != "" {
 			return token, nil
 		}
-		return "", errors.New("No access token available")
+		return "", errors.New("no access token available")
 	}
 	tokenInfo, refreshErr := s.kiroRefresher.RefreshAccountToken(ctx, account)
 	if refreshErr != nil {
@@ -537,7 +538,7 @@ func (s *AccountTestService) ensureKiroOAuthAccessToken(ctx context.Context, acc
 	}
 	token := strings.TrimSpace(account.GetCredential("access_token"))
 	if token == "" {
-		return "", errors.New("No access token available after refresh")
+		return "", errors.New("no access token available after refresh")
 	}
 	return token, nil
 }

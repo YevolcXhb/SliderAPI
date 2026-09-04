@@ -112,7 +112,7 @@ func (c mysqlCompatConn) BeginTx(ctx context.Context, opts driver.TxOptions) (dr
 	if b, ok := c.Conn.(driver.ConnBeginTx); ok {
 		return b.BeginTx(ctx, opts)
 	}
-	return c.Conn.Begin()
+	return c.Conn.Begin() //nolint:staticcheck // SA1019
 }
 
 func (c mysqlCompatConn) CheckNamedValue(nv *driver.NamedValue) error {
@@ -148,7 +148,7 @@ func (s mysqlCompatStmt) Exec(args []driver.Value) (driver.Result, error) {
 	for i, value := range mapped {
 		values[i] = value.Value
 	}
-	return s.Stmt.Exec(values)
+	return s.Stmt.Exec(values) //nolint:staticcheck // SA1019
 }
 
 func (s mysqlCompatStmt) Query(args []driver.Value) (driver.Rows, error) {
@@ -164,7 +164,7 @@ func (s mysqlCompatStmt) Query(args []driver.Value) (driver.Rows, error) {
 	for i, value := range mapped {
 		values[i] = value.Value
 	}
-	return s.Stmt.Query(values)
+	return s.Stmt.Query(values) //nolint:staticcheck // SA1019
 }
 
 func (s mysqlCompatStmt) ExecContext(ctx context.Context, args []driver.NamedValue) (driver.Result, error) {

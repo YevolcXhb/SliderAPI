@@ -6,15 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
-
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	dbusagecleanuptask "github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
-
 	"io"
+	"strings"
+	"time"
 )
 
 type usageCleanupRepository struct {
@@ -25,11 +23,9 @@ type usageCleanupRepository struct {
 func NewUsageCleanupRepository(client *dbent.Client, sqlDB *sql.DB) service.UsageCleanupRepository {
 	return newUsageCleanupRepositoryWithSQL(client, sqlDB)
 }
-
 func newUsageCleanupRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor) *usageCleanupRepository {
 	return &usageCleanupRepository{client: client, sql: sqlq}
 }
-
 func (r *usageCleanupRepository) CreateTask(ctx context.Context, task *service.UsageCleanupTask) error {
 	if task == nil {
 		return nil
@@ -39,7 +35,6 @@ func (r *usageCleanupRepository) CreateTask(ctx context.Context, task *service.U
 	}
 	return r.createTaskWithSQL(ctx, task)
 }
-
 func (r *usageCleanupRepository) ListTasks(ctx context.Context, params pagination.PaginationParams) ([]service.UsageCleanupTask, *pagination.PaginationResult, error) {
 	if r.client != nil {
 		return r.listTasksWithEnt(ctx, params)
@@ -51,7 +46,6 @@ func (r *usageCleanupRepository) ListTasks(ctx context.Context, params paginatio
 	if total == 0 {
 		return []service.UsageCleanupTask{}, paginationResultFromTotal(0, params), nil
 	}
-
 	query := `
 		SELECT id, status, filters, created_by, deleted_rows, error_message,
 			canceled_by, canceled_at,
@@ -65,7 +59,6 @@ func (r *usageCleanupRepository) ListTasks(ctx context.Context, params paginatio
 		return nil, nil, err
 	}
 	defer func() { _ = rows.Close() }()
-
 	tasks := make([]service.UsageCleanupTask, 0)
 	for rows.Next() {
 		var task service.UsageCleanupTask
@@ -117,7 +110,6 @@ func (r *usageCleanupRepository) ListTasks(ctx context.Context, params paginatio
 	}
 	return tasks, paginationResultFromTotal(total, params), nil
 }
-
 func (r *usageCleanupRepository) ClaimNextPendingTask(ctx context.Context, staleRunningAfterSeconds int64) (*service.UsageCleanupTask, error) {
 	if staleRunningAfterSeconds <= 0 {
 		staleRunningAfterSeconds = 1800
@@ -197,7 +189,6 @@ func (r *usageCleanupRepository) ClaimNextPendingTask(ctx context.Context, stale
 	}
 	return &task, nil
 }
-
 func (r *usageCleanupRepository) GetTaskStatus(ctx context.Context, taskID int64) (string, error) {
 	if r.client != nil {
 		return r.getTaskStatusWithEnt(ctx, taskID)
@@ -208,7 +199,6 @@ func (r *usageCleanupRepository) GetTaskStatus(ctx context.Context, taskID int64
 	}
 	return status, nil
 }
-
 func (r *usageCleanupRepository) UpdateTaskProgress(ctx context.Context, taskID int64, deletedRows int64) error {
 	if r.client != nil {
 		return r.updateTaskProgressWithEnt(ctx, taskID, deletedRows)
@@ -222,7 +212,6 @@ func (r *usageCleanupRepository) UpdateTaskProgress(ctx context.Context, taskID 
 	_, err := r.sql.ExecContext(ctx, query, deletedRows, taskID)
 	return err
 }
-
 func (r *usageCleanupRepository) CancelTask(ctx context.Context, taskID int64, canceledBy int64) (bool, error) {
 	if r.client != nil {
 		return r.cancelTaskWithEnt(ctx, taskID, canceledBy)
@@ -254,7 +243,6 @@ func (r *usageCleanupRepository) CancelTask(ctx context.Context, taskID int64, c
 	}
 	return affected > 0, nil
 }
-
 func (r *usageCleanupRepository) MarkTaskSucceeded(ctx context.Context, taskID int64, deletedRows int64) error {
 	if r.client != nil {
 		return r.markTaskSucceededWithEnt(ctx, taskID, deletedRows)
@@ -270,7 +258,6 @@ func (r *usageCleanupRepository) MarkTaskSucceeded(ctx context.Context, taskID i
 	_, err := r.sql.ExecContext(ctx, query, service.UsageCleanupStatusSucceeded, deletedRows, taskID)
 	return err
 }
-
 func (r *usageCleanupRepository) MarkTaskFailed(ctx context.Context, taskID int64, deletedRows int64, errorMsg string) error {
 	if r.client != nil {
 		return r.markTaskFailedWithEnt(ctx, taskID, deletedRows, errorMsg)
@@ -287,7 +274,6 @@ func (r *usageCleanupRepository) MarkTaskFailed(ctx context.Context, taskID int6
 	_, err := r.sql.ExecContext(ctx, query, service.UsageCleanupStatusFailed, deletedRows, errorMsg, taskID)
 	return err
 }
-
 func (r *usageCleanupRepository) DeleteUsageLogsBatch(ctx context.Context, filters service.UsageCleanupFilters, limit int) (int64, error) {
 	if filters.StartTime.IsZero() || filters.EndTime.IsZero() {
 		return 0, fmt.Errorf("cleanup filters missing time range")
@@ -326,7 +312,6 @@ func selectUsageLogIDsForCleanup(ctx context.Context, exec sqlExecutor, whereCla
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
-
 	ids := make([]int64, 0, 512)
 	for rows.Next() {
 		var id int64
@@ -354,7 +339,6 @@ func deleteUsageLogsByIDs(ctx context.Context, exec sqlExecutor, ids []int64) (i
 		return 0, time.Time{}, err
 	}
 	defer func() { _ = rows.Close() }()
-
 	var deleted int64
 	var earliest time.Time
 	for rows.Next() {
@@ -372,7 +356,6 @@ func deleteUsageLogsByIDs(ctx context.Context, exec sqlExecutor, ids []int64) (i
 	}
 	return deleted, earliest, nil
 }
-
 func (r *usageCleanupRepository) deleteUsageLogsBatchWithRollupInvalidation(ctx context.Context, db *sql.DB, whereClause string, args []any) (int64, error) {
 	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
@@ -382,7 +365,6 @@ func (r *usageCleanupRepository) deleteUsageLogsBatchWithRollupInvalidation(ctx 
 		_ = tx.Rollback()
 		return 0, err
 	}
-
 	if err := lockGroupUsageRollupState(ctx, tx); err != nil {
 		return rollback(err)
 	}
@@ -394,7 +376,6 @@ func (r *usageCleanupRepository) deleteUsageLogsBatchWithRollupInvalidation(ctx 
 	if err != nil {
 		return rollback(err)
 	}
-
 	if deleted > 0 {
 		if err := invalidateGroupUsageRollupsAt(ctx, tx, earliestDeletedAt); err != nil {
 			return rollback(err)
@@ -405,7 +386,6 @@ func (r *usageCleanupRepository) deleteUsageLogsBatchWithRollupInvalidation(ctx 
 	}
 	return deleted, nil
 }
-
 func buildUsageCleanupWhere(filters service.UsageCleanupFilters) (string, []any) {
 	conditions := make([]string, 0, 8)
 	args := make([]any, 0, 8)
@@ -452,11 +432,9 @@ func buildUsageCleanupWhere(filters service.UsageCleanupFilters) (string, []any)
 		condition, conditionArgs := buildRequestTypeFilterCondition(idx, *filters.RequestType)
 		conditions = append(conditions, condition)
 		args = append(args, conditionArgs...)
-		idx += len(conditionArgs)
 	} else if filters.Stream != nil {
 		conditions = append(conditions, "stream = ?")
 		args = append(args, *filters.Stream)
-		idx++
 	}
 	if filters.BillingType != nil {
 		conditions = append(conditions, "billing_type = ?")
@@ -464,7 +442,6 @@ func buildUsageCleanupWhere(filters service.UsageCleanupFilters) (string, []any)
 	}
 	return strings.Join(conditions, " AND "), args
 }
-
 func (r *usageCleanupRepository) createTaskWithEnt(ctx context.Context, task *service.UsageCleanupTask) error {
 	client := clientFromContext(ctx, r.client)
 	filtersJSON, err := json.Marshal(task.Filters)
@@ -486,7 +463,6 @@ func (r *usageCleanupRepository) createTaskWithEnt(ctx context.Context, task *se
 	task.UpdatedAt = created.UpdatedAt
 	return nil
 }
-
 func (r *usageCleanupRepository) createTaskWithSQL(ctx context.Context, task *service.UsageCleanupTask) error {
 	filtersJSON, err := json.Marshal(task.Filters)
 	if err != nil {
@@ -511,7 +487,6 @@ func (r *usageCleanupRepository) createTaskWithSQL(ctx context.Context, task *se
 		`, nil, &task.ID, &task.CreatedAt, &task.UpdatedAt)
 	})
 }
-
 func (r *usageCleanupRepository) listTasksWithEnt(ctx context.Context, params pagination.PaginationParams) ([]service.UsageCleanupTask, *pagination.PaginationResult, error) {
 	client := clientFromContext(ctx, r.client)
 	query := client.UsageCleanupTask.Query()
@@ -540,7 +515,6 @@ func (r *usageCleanupRepository) listTasksWithEnt(ctx context.Context, params pa
 	}
 	return tasks, paginationResultFromTotal(int64(total), params), nil
 }
-
 func (r *usageCleanupRepository) getTaskStatusWithEnt(ctx context.Context, taskID int64) (string, error) {
 	client := clientFromContext(ctx, r.client)
 	task, err := client.UsageCleanupTask.Query().
@@ -554,7 +528,6 @@ func (r *usageCleanupRepository) getTaskStatusWithEnt(ctx context.Context, taskI
 	}
 	return task.Status, nil
 }
-
 func (r *usageCleanupRepository) updateTaskProgressWithEnt(ctx context.Context, taskID int64, deletedRows int64) error {
 	client := clientFromContext(ctx, r.client)
 	now := time.Now()
@@ -565,7 +538,6 @@ func (r *usageCleanupRepository) updateTaskProgressWithEnt(ctx context.Context, 
 		Save(ctx)
 	return err
 }
-
 func (r *usageCleanupRepository) cancelTaskWithEnt(ctx context.Context, taskID int64, canceledBy int64) (bool, error) {
 	client := clientFromContext(ctx, r.client)
 	now := time.Now()
@@ -586,7 +558,6 @@ func (r *usageCleanupRepository) cancelTaskWithEnt(ctx context.Context, taskID i
 	}
 	return affected > 0, nil
 }
-
 func (r *usageCleanupRepository) markTaskSucceededWithEnt(ctx context.Context, taskID int64, deletedRows int64) error {
 	client := clientFromContext(ctx, r.client)
 	now := time.Now()
@@ -599,7 +570,6 @@ func (r *usageCleanupRepository) markTaskSucceededWithEnt(ctx context.Context, t
 		Save(ctx)
 	return err
 }
-
 func (r *usageCleanupRepository) markTaskFailedWithEnt(ctx context.Context, taskID int64, deletedRows int64, errorMsg string) error {
 	client := clientFromContext(ctx, r.client)
 	now := time.Now()
@@ -613,7 +583,6 @@ func (r *usageCleanupRepository) markTaskFailedWithEnt(ctx context.Context, task
 		Save(ctx)
 	return err
 }
-
 func usageCleanupTaskFromEnt(row *dbent.UsageCleanupTask) (service.UsageCleanupTask, error) {
 	task := service.UsageCleanupTask{
 		ID:          row.ID,
@@ -645,7 +614,6 @@ func usageCleanupTaskFromEnt(row *dbent.UsageCleanupTask) (service.UsageCleanupT
 	}
 	return task, nil
 }
-
 func (r *usageCleanupRepository) FindOldestUsageLogBefore(ctx context.Context, cutoff time.Time) (*time.Time, error) {
 	if r == nil || r.sql == nil {
 		return nil, fmt.Errorf("usage cleanup repository not ready")
@@ -660,7 +628,6 @@ func (r *usageCleanupRepository) FindOldestUsageLogBefore(ctx context.Context, c
 	value := oldest.Time.UTC()
 	return &value, nil
 }
-
 func (r *usageCleanupRepository) SnapshotUsageLogs(ctx context.Context, filters service.UsageCleanupFilters) error {
 	if filters.StartTime.IsZero() || filters.EndTime.IsZero() {
 		return fmt.Errorf("usage log snapshot filters missing time range")
@@ -672,7 +639,6 @@ func (r *usageCleanupRepository) SnapshotUsageLogs(ctx context.Context, filters 
 	if whereClause == "" {
 		return fmt.Errorf("usage log snapshot filters missing time range")
 	}
-
 	query := fmt.Sprintf(`
 		INSERT INTO usage_daily_dimension_snapshots (
 			bucket_date,
@@ -751,7 +717,6 @@ func (r *usageCleanupRepository) SnapshotUsageLogs(ctx context.Context, filters 
 			total_duration_ms = VALUES(total_duration_ms),
 			computed_at = VALUES(computed_at)
 	`, whereClause)
-
 	if _, err := r.sql.ExecContext(ctx, query, args...); err != nil {
 		return err
 	}
@@ -760,7 +725,6 @@ func (r *usageCleanupRepository) SnapshotUsageLogs(ctx context.Context, filters 
 	}
 	return nil
 }
-
 func hasUsageCleanupDimensionFilters(filters service.UsageCleanupFilters) bool {
 	return filters.UserID != nil ||
 		filters.APIKeyID != nil ||
@@ -771,7 +735,6 @@ func hasUsageCleanupDimensionFilters(filters service.UsageCleanupFilters) bool {
 		filters.Stream != nil ||
 		filters.BillingType != nil
 }
-
 func (r *usageCleanupRepository) ExportUsageLogs(ctx context.Context, filters service.UsageCleanupFilters) (io.ReadCloser, error) {
 	if filters.StartTime.IsZero() || filters.EndTime.IsZero() {
 		return nil, fmt.Errorf("usage log export filters missing time range")
@@ -856,7 +819,6 @@ func (r *usageCleanupRepository) ExportUsageLogs(ctx context.Context, filters se
 	}
 	return &usageLogsArchiveReader{rows: rows}, nil
 }
-
 func (r *usageCleanupRepository) snapshotRevenueDailyDimensions(ctx context.Context, whereClause string, args []any) error {
 	if strings.TrimSpace(whereClause) == "" {
 		return fmt.Errorf("revenue snapshot filters missing time range")
@@ -929,7 +891,6 @@ func (r *usageCleanupRepository) snapshotRevenueDailyDimensions(ctx context.Cont
 			share_platform_fee = VALUES(share_platform_fee),
 			computed_at = VALUES(computed_at)
 	`, qualifyUsageCleanupWhereForRevenueSnapshot(whereClause))
-
 	if _, err := r.sql.ExecContext(ctx, query, args...); err != nil {
 		return fmt.Errorf("snapshot revenue daily dimensions: %w", err)
 	}
@@ -956,14 +917,12 @@ func qualifyUsageCleanupWhereForRevenueSnapshot(whereClause string) string {
 		"billing_type ", "ul.billing_type ",
 	).Replace(whereClause)
 }
-
 func (r *usageLogsArchiveReader) Close() error {
 	if r == nil || r.rows == nil {
 		return nil
 	}
 	return r.rows.Close()
 }
-
 func (r *usageLogsArchiveReader) Read(p []byte) (int, error) {
 	if r == nil || r.rows == nil {
 		return 0, io.EOF

@@ -14,8 +14,8 @@ const channelMonitorV2ModelSQL = `COALESCE(NULLIF(TRIM(ul.requested_model), ''),
 
 // Tiered retention balances UI windows against storage:
 //
-//	1m facts  鈫?short (late writes + rebuild rollups)
-//	5m/1h/12h/1d rollups 鈫?longer, aligned to 90m / 24h / 7d / 30d(+audit)
+//	1m facts  �?short (late writes + rebuild rollups)
+//	5m/1h/12h/1d rollups �?longer, aligned to 90m / 24h / 7d / 30d(+audit)
 //
 // Backfill may still write short-lived 1m rows for old windows so rollups can be
 // built; prune at end of each recompute drops them past their TTL while rollups remain.
@@ -531,12 +531,12 @@ func channelMonitorV2InsertRowValues(rowCount, perRow int) string {
 	var b strings.Builder
 	for i := 0; i < rowCount; i++ {
 		if i > 0 {
-			b.WriteString(", ")
+			_, _ = b.WriteString(", ")
 		}
-		b.WriteString("(")
+		_, _ = b.WriteString("(")
 		for j := 0; j < perRow; j++ {
 			if j > 0 {
-				b.WriteString(", ")
+				_, _ = b.WriteString(", ")
 			}
 			b.WriteString("?")
 		}
