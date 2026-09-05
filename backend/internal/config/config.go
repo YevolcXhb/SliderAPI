@@ -2062,7 +2062,7 @@ func normalizeModulesSubtree(raw any) (map[string]map[string]any, error) {
 }
 
 func setDefaults() {
-	viper.SetDefault("run_mode", RunModeSimple)
+	viper.SetDefault("run_mode", RunModeStandard)
 
 	// Server
 	viper.SetDefault("server.host", "0.0.0.0")
