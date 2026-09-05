@@ -2689,17 +2689,28 @@ func (r *accountRepository) UpdateExtra(ctx context.Context, id int64, updates m
 			client = tx.Client()
 		}
 	}
-	extraExpression := "JSON_MERGE_PATCH(COALESCE(extra, JSON_OBJECT()), ?)"
+	baseExtraExpr := "JSON_MERGE_PATCH(COALESCE(extra, JSON_OBJECT()), ?)"
 	if clearProbeSnapshot {
-		extraExpression = "JSON_REMOVE(" + extraExpression + ", '$.upstream_billing_probe')"
+		baseExtraExpr = "JSON_REMOVE(" + baseExtraExpr + ", '$.upstream_billing_probe')"
 	}
+	extraExpression := baseExtraExpr
+	// extraCopies tracks how many copies of baseExtraExpr extraExpression now
+	// contains. ensureCodexFingerprintSeedSQL duplicates it twice, so one extra
+	// arg must be appended to keep placeholder count == arg count.
+	extraCopies := 1
 	if service.ShouldEnsureCodexFingerprintSeedForExtraUpdates(updates) {
 		extraExpression = ensureCodexFingerprintSeedSQL(extraExpression)
+		extraCopies = 2
 	}
+	extraArgs := make([]any, 0, extraCopies+1)
+	for i := 0; i < extraCopies; i++ {
+		extraArgs = append(extraArgs, string(payload))
+	}
+	extraArgs = append(extraArgs, id)
 	result, err := client.ExecContext(
 		ctx,
 		"UPDATE accounts SET extra = "+extraExpression+", updated_at = NOW() WHERE id = ? AND deleted_at IS NULL",
-		string(payload), id,
+		extraArgs...,
 	)
 
 	if err != nil {
@@ -3020,20 +3031,36 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 	}
 
 	if len(updates.Extra) > 0 || len(ollamaGroupIdentityChanges) > 0 || ollamaProxyIdentityChanged != "" || updates.EnsureCodexFingerprintSeed {
-		extraExpression := "COALESCE(extra, JSON_OBJECT())"
+		// extraExpression may contain a single JSON_MERGE_PATCH '?' placeholder. When
+		// it is textually duplicated by CASE WHEN THEN/ELSE branches or by
+		// ensureCodexFingerprintSeedSQL, one matching arg must be appended per copy,
+		// otherwise the prepared statement placeholder count won't match the arg
+		// count and the driver returns an internal error (bulk proxy update hits this).
+		var extraPayload []byte
+		extraHasArg := false
+		baseExtraExpr := "COALESCE(extra, JSON_OBJECT())"
 		if len(updates.Extra) > 0 {
 			payload, err := json.Marshal(updates.Extra)
 			if err != nil {
 				return 0, err
 			}
-			extraExpression = "JSON_MERGE_PATCH(" + extraExpression + ", ?)"
-			args = append(args, payload)
+			extraPayload = payload
+			extraHasArg = true
+			baseExtraExpr = "JSON_MERGE_PATCH(" + baseExtraExpr + ", ?)"
 			if upstreamBillingProbeExplicitlyDisabled(updates.Extra) || upstreamBillingProbeSnapshotClearRequested(updates.Extra) {
-				extraExpression = "JSON_REMOVE(" + extraExpression + ", '$.upstream_billing_probe')"
+				baseExtraExpr = "JSON_REMOVE(" + baseExtraExpr + ", '$.upstream_billing_probe')"
 			}
 			if ollamaCloudUsageSnapshotClearRequested(updates.Extra) {
-				extraExpression = "JSON_REMOVE(" + extraExpression + ", '$.ollama_cloud_usage_snapshot')"
+				baseExtraExpr = "JSON_REMOVE(" + baseExtraExpr + ", '$.ollama_cloud_usage_snapshot')"
 			}
+		}
+		// extraCopy returns one textual copy of baseExtraExpr and appends one
+		// matching arg per copy.
+		extraCopy := func() string {
+			if extraHasArg {
+				args = append(args, extraPayload)
+			}
+			return baseExtraExpr
 		}
 		eligibleAccount := "platform IN ('openai', 'anthropic') AND type = 'apikey'"
 		groupIdentityChanged := ""
@@ -3049,15 +3076,32 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 				snapshotIdentityChanged = "(" + snapshotIdentityChanged + " OR " + proxyChanged + ")"
 			}
 		}
+		// extraCopies tracks how many copies of baseExtraExpr extraExpression now
+		// contains, so ensureCodexFingerprintSeedSQL can append the right arg count.
+		var extraExpression string
+		extraCopies := 0
 		if groupIdentityChanged != "" {
 			extraExpression = "CASE" +
-				" WHEN " + groupIdentityChanged + " THEN JSON_REMOVE(" + extraExpression + ", '$.ollama_cloud_usage_session', '$.ollama_cloud_usage_auto_refresh', '$.ollama_cloud_usage_snapshot')" +
-				" WHEN " + snapshotIdentityChanged + " THEN JSON_REMOVE(" + extraExpression + ", '$.ollama_cloud_usage_snapshot')" +
-				" ELSE " + extraExpression + " END"
+				" WHEN " + groupIdentityChanged + " THEN JSON_REMOVE(" + extraCopy() + ", '$.ollama_cloud_usage_session', '$.ollama_cloud_usage_auto_refresh', '$.ollama_cloud_usage_snapshot')" +
+				" WHEN " + snapshotIdentityChanged + " THEN JSON_REMOVE(" + extraCopy() + ", '$.ollama_cloud_usage_snapshot')" +
+				" ELSE " + extraCopy() + " END"
+			extraCopies = 3
 		} else if snapshotIdentityChanged != "" {
-			extraExpression = "CASE WHEN " + snapshotIdentityChanged + " THEN JSON_REMOVE(" + extraExpression + ", '$.ollama_cloud_usage_snapshot') ELSE " + extraExpression + " END"
+			extraExpression = "CASE WHEN " + snapshotIdentityChanged + " THEN JSON_REMOVE(" + extraCopy() + ", '$.ollama_cloud_usage_snapshot') ELSE " + extraCopy() + " END"
+			extraCopies = 2
+		} else {
+			extraExpression = extraCopy()
+			extraCopies = 1
 		}
 		if updates.EnsureCodexFingerprintSeed {
+			// ensureCodexFingerprintSeedSQL duplicates extraExpression twice (oauth
+			// branch + else branch), so append another extraCopies args to make the
+			// total = 2*extraCopies, matching the placeholder count.
+			for i := 0; i < extraCopies; i++ {
+				if extraHasArg {
+					args = append(args, extraPayload)
+				}
+			}
 			extraExpression = ensureCodexFingerprintSeedSQL(extraExpression)
 		}
 		setClauses = append(setClauses, "extra = "+extraExpression)
