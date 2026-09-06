@@ -22,13 +22,17 @@ func ensureSimpleModeDefaultGroups(ctx context.Context, client *dbent.Client) er
 	if err := backfillSimpleModeDefaultGroupsSubscriptionType(ctx, client); err != nil {
 		return err
 	}
+	if err := backfillLegacyAntigravityNumberedDefaults(ctx, client); err != nil {
+		return err
+	}
 
 	requiredByPlatform := map[string]int{
 		service.PlatformAnthropic:   1,
 		service.PlatformOpenAI:      1,
 		service.PlatformGemini:      1,
-		service.PlatformAntigravity: 2,
+		service.PlatformAntigravity: 1,
 		service.PlatformGrok:        1,
+		service.PlatformKiro:        1,
 	}
 
 	for platform, minCount := range requiredByPlatform {
@@ -39,22 +43,12 @@ func ensureSimpleModeDefaultGroups(ctx context.Context, client *dbent.Client) er
 			return fmt.Errorf("count groups for platform %s: %w", platform, err)
 		}
 
-		if platform == service.PlatformAntigravity {
-			if count < minCount {
-				for i := count; i < minCount; i++ {
-					name := fmt.Sprintf("%s-default-%d", platform, i+1)
-					if err := createGroupIfNotExists(ctx, client, name, platform); err != nil {
-						return err
-					}
-				}
+		// Each platform gets a single "<platform>-default" group.
+		if count < minCount {
+			name := platform + "-default"
+			if err := createGroupIfNotExists(ctx, client, name, platform); err != nil {
+				return err
 			}
-			continue
-		}
-
-		// Non-antigravity platforms: ensure <platform>-default exists.
-		name := platform + "-default"
-		if err := createGroupIfNotExists(ctx, client, name, platform); err != nil {
-			return err
 		}
 	}
 
@@ -125,6 +119,35 @@ func backfillSimpleModeDefaultGroupsSubscriptionType(ctx context.Context, client
 		Save(ctx)
 	if err != nil {
 		return fmt.Errorf("backfill auto-created default groups subscription type: %w", err)
+	}
+	return nil
+}
+
+// backfillLegacyAntigravityNumberedDefaults disables the legacy numbered
+// antigravity default groups ("antigravity-default-1", "antigravity-default-2")
+// that older builds created before antigravity switched to a single
+// "antigravity-default" group. These are auto-created defaults (matched by
+// description); operator-managed groups are never touched. The legacy groups
+// are disabled (not deleted) so any accounts already bound to them keep working
+// until an operator reassigns them.
+func backfillLegacyAntigravityNumberedDefaults(ctx context.Context, client *dbent.Client) error {
+	legacyNames := []string{
+		service.PlatformAntigravity + "-default-1",
+		service.PlatformAntigravity + "-default-2",
+	}
+	for _, name := range legacyNames {
+		_, err := client.Group.Update().
+			Where(
+				group.NameEQ(name),
+				group.DescriptionEQ(simpleModeDefaultGroupDescription),
+				group.StatusEQ(service.StatusActive),
+				group.DeletedAtIsNil(),
+			).
+			SetStatus(service.StatusDisabled).
+			Save(ctx)
+		if err != nil {
+			return fmt.Errorf("disable legacy antigravity default %s: %w", name, err)
+		}
 	}
 	return nil
 }

@@ -31,8 +31,8 @@ func TestEnsureSimpleModeDefaultGroups_CreatesMissingDefaults(t *testing.T) {
 	assertGroupExists(service.PlatformAnthropic + "-default")
 	assertGroupExists(service.PlatformOpenAI + "-default")
 	assertGroupExists(service.PlatformGemini + "-default")
-	assertGroupExists(service.PlatformAntigravity + "-default-1")
-	assertGroupExists(service.PlatformAntigravity + "-default-2")
+	assertGroupExists(service.PlatformAntigravity + "-default")
+	assertGroupExists(service.PlatformKiro + "-default")
 
 	grokDefault, err := client.Group.Query().
 		Where(group.NameEQ(service.PlatformGrok+"-default"), group.DeletedAtIsNil()).
@@ -159,7 +159,7 @@ func TestEnsureSimpleModeDefaultGroups_IgnoresSoftDeletedGroups(t *testing.T) {
 	require.Equal(t, 1, count)
 }
 
-func TestEnsureSimpleModeDefaultGroups_AntigravityNeedsTwoGroupsOnlyByCount(t *testing.T) {
+func TestEnsureSimpleModeDefaultGroups_AntigravityGetsSingleDefault(t *testing.T) {
 	ctx := context.Background()
 	tx := testEntTx(t)
 	client := tx.Client()
@@ -167,14 +167,26 @@ func TestEnsureSimpleModeDefaultGroups_AntigravityNeedsTwoGroupsOnlyByCount(t *t
 	seedCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
+	// Pre-existing operator-managed antigravity groups must not suppress creation
+	// of the single "antigravity-default" group.
 	mustCreateGroup(t, client, &service.Group{Name: "ag-custom-1-" + time.Now().Format(time.RFC3339Nano), Platform: service.PlatformAntigravity})
 	mustCreateGroup(t, client, &service.Group{Name: "ag-custom-2-" + time.Now().Format(time.RFC3339Nano), Platform: service.PlatformAntigravity})
 
 	require.NoError(t, ensureSimpleModeDefaultGroups(seedCtx, client))
 
-	count, err := client.Group.Query().Where(group.PlatformEQ(service.PlatformAntigravity), group.DeletedAtIsNil()).Count(seedCtx)
+	// Exactly one "antigravity-default" group exists (not the old -1/-2 pair).
+	defaultCount, err := client.Group.Query().
+		Where(group.NameEQ(service.PlatformAntigravity+"-default"), group.DeletedAtIsNil()).
+		Count(seedCtx)
 	require.NoError(t, err)
-	require.GreaterOrEqual(t, count, 2)
+	require.Equal(t, 1, defaultCount, "antigravity should have a single default group")
+
+	// The legacy numbered names must not be (re)created.
+	for _, name := range []string{service.PlatformAntigravity + "-default-1", service.PlatformAntigravity + "-default-2"} {
+		c, err := client.Group.Query().Where(group.NameEQ(name), group.DeletedAtIsNil()).Count(seedCtx)
+		require.NoError(t, err)
+		require.Equal(t, 0, c, "legacy numbered default %s should not be created", name)
+	}
 }
 
 func TestEnsureSimpleModeDefaultGroups_CreatesAndBackfillsSubscriptionType(t *testing.T) {
