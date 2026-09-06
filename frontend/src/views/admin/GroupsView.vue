@@ -4278,7 +4278,7 @@ const handleCreateGroup = async () => {
     }
   } catch (error: any) {
     appStore.showError(
-      error.response?.data?.detail || t("admin.groups.failedToCreate"),
+      error?.message || t("admin.groups.failedToCreate"),
     );
     console.error("Error creating group:", error);
     // Don't advance tour on error
@@ -4418,7 +4418,7 @@ const handleUpdateGroup = async () => {
     loadGroups();
   } catch (error: any) {
     appStore.showError(
-      error.response?.data?.detail || t("admin.groups.failedToUpdate"),
+      error?.message || t("admin.groups.failedToUpdate"),
     );
     console.error("Error updating group:", error);
   } finally {
@@ -4481,7 +4481,7 @@ const confirmDelete = async () => {
     loadGroups();
   } catch (error: any) {
     appStore.showError(
-      error.response?.data?.detail || t("admin.groups.failedToDelete"),
+      error?.message || t("admin.groups.failedToDelete"),
     );
     console.error("Error deleting group:", error);
   }
@@ -4607,7 +4607,7 @@ const saveSortOrder = async () => {
     loadGroups();
   } catch (error: any) {
     appStore.showError(
-      error.response?.data?.detail || t("admin.groups.failedToUpdateSortOrder"),
+      error?.message || t("admin.groups.failedToUpdateSortOrder"),
     );
     console.error("Error updating sort order:", error);
   } finally {

@@ -58,6 +58,9 @@ func Accepted(c *gin.Context, data any) {
 
 // Error 返回错误响应
 func Error(c *gin.Context, statusCode int, message string) {
+	if statusCode == http.StatusBadRequest {
+		logBadRequestDetail(c, message)
+	}
 	c.JSON(statusCode, Response{
 		Code:     statusCode,
 		Message:  message,
@@ -69,6 +72,9 @@ func Error(c *gin.Context, statusCode int, message string) {
 // ErrorWithDetails returns an error response compatible with the existing envelope while
 // optionally providing structured error fields (reason/metadata).
 func ErrorWithDetails(c *gin.Context, statusCode int, message, reason string, metadata map[string]string) {
+	if statusCode == http.StatusBadRequest {
+		logBadRequestDetail(c, message)
+	}
 	c.JSON(statusCode, Response{
 		Code:     statusCode,
 		Message:  message,
@@ -93,6 +99,16 @@ func ErrorFrom(c *gin.Context, err error) bool {
 
 	ErrorWithDetails(c, statusCode, status.Message, status.Reason, status.Metadata)
 	return true
+}
+
+// logBadRequestDetail records 400 validation rejections in the server log. The HTTP
+// access log only captures the status code, so without this the reason a request was
+// rejected is invisible to operators debugging client failures.
+func logBadRequestDetail(c *gin.Context, message string) {
+	if c == nil || c.Request == nil {
+		return
+	}
+	log.Printf("[WARN] 400 %s %s: %s", c.Request.Method, c.Request.URL.Path, logredact.RedactText(message))
 }
 
 // BadRequest 返回400错误
