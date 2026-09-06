@@ -459,6 +459,7 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		RateMultiplier:                  input.RateMultiplier,
 		IsExclusive:                     input.IsExclusive,
 		Status:                          StatusActive,
+		Scope:                           GroupScopePublic,
 		SubscriptionType:                subscriptionType,
 		DailyLimitUSD:                   dailyLimit,
 		WeeklyLimitUSD:                  weeklyLimit,
