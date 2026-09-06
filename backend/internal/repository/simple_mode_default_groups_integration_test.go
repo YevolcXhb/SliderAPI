@@ -176,3 +176,56 @@ func TestEnsureSimpleModeDefaultGroups_AntigravityNeedsTwoGroupsOnlyByCount(t *t
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, count, 2)
 }
+
+func TestEnsureSimpleModeDefaultGroups_CreatesAndBackfillsSubscriptionType(t *testing.T) {
+	ctx := context.Background()
+	tx := testEntTx(t)
+	client := tx.Client()
+
+	seedCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// Pre-existing auto-created default group seeded as "standard" (as older builds did).
+	// It should be backfilled to "subscription" by ensureSimpleModeDefaultGroups.
+	legacy, err := client.Group.Create().
+		SetName(service.PlatformAnthropic + "-default").
+		SetDescription(simpleModeDefaultGroupDescription).
+		SetPlatform(service.PlatformAnthropic).
+		SetStatus(service.StatusActive).
+		SetSubscriptionType(service.SubscriptionTypeStandard).
+		SetRateMultiplier(1.0).
+		SetIsExclusive(false).
+		Save(seedCtx)
+	require.NoError(t, err)
+
+	// Operator-managed group seeded as "standard" must NOT be touched.
+	operatorGroup, err := client.Group.Create().
+		SetName("operator-anthropic-" + time.Now().Format(time.RFC3339Nano)).
+		SetDescription("Operator-managed group").
+		SetPlatform(service.PlatformAnthropic).
+		SetStatus(service.StatusActive).
+		SetSubscriptionType(service.SubscriptionTypeStandard).
+		SetRateMultiplier(1.0).
+		SetIsExclusive(false).
+		Save(seedCtx)
+	require.NoError(t, err)
+
+	require.NoError(t, ensureSimpleModeDefaultGroups(seedCtx, client))
+
+	// Legacy auto-created default is migrated to subscription.
+	legacy, err = client.Group.Get(seedCtx, legacy.ID)
+	require.NoError(t, err)
+	require.Equal(t, service.SubscriptionTypeSubscription, legacy.SubscriptionType)
+
+	// Operator-managed group is left as standard.
+	operatorGroup, err = client.Group.Get(seedCtx, operatorGroup.ID)
+	require.NoError(t, err)
+	require.Equal(t, service.SubscriptionTypeStandard, operatorGroup.SubscriptionType)
+
+	// A newly auto-created default (e.g. grok-default, absent above) is subscription.
+	grokDefault, err := client.Group.Query().
+		Where(group.NameEQ(service.PlatformGrok+"-default"), group.DeletedAtIsNil()).
+		Only(seedCtx)
+	require.NoError(t, err)
+	require.Equal(t, service.SubscriptionTypeSubscription, grokDefault.SubscriptionType)
+}

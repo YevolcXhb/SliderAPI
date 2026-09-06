@@ -19,6 +19,9 @@ func ensureSimpleModeDefaultGroups(ctx context.Context, client *dbent.Client) er
 	if err := backfillSimpleModeGrokDefaultImageGeneration(ctx, client); err != nil {
 		return err
 	}
+	if err := backfillSimpleModeDefaultGroupsSubscriptionType(ctx, client); err != nil {
+		return err
+	}
 
 	requiredByPlatform := map[string]int{
 		service.PlatformAnthropic:   1,
@@ -74,7 +77,7 @@ func createGroupIfNotExists(ctx context.Context, client *dbent.Client, name, pla
 		SetDescription(simpleModeDefaultGroupDescription).
 		SetPlatform(platform).
 		SetStatus(service.StatusActive).
-		SetSubscriptionType(service.SubscriptionTypeStandard).
+		SetSubscriptionType(service.SubscriptionTypeSubscription).
 		SetRateMultiplier(1.0).
 		SetIsExclusive(false).
 		SetAllowImageGeneration(platform == service.PlatformGrok).
@@ -103,6 +106,25 @@ func backfillSimpleModeGrokDefaultImageGeneration(ctx context.Context, client *d
 		Save(ctx)
 	if err != nil {
 		return fmt.Errorf("backfill auto-created grok default image generation: %w", err)
+	}
+	return nil
+}
+
+// backfillSimpleModeDefaultGroupsSubscriptionType migrates existing auto-created
+// default groups (created as "standard" by older builds) to "subscription" type,
+// matching the current default. Only touches groups with the auto-created
+// description so user-created groups are never changed.
+func backfillSimpleModeDefaultGroupsSubscriptionType(ctx context.Context, client *dbent.Client) error {
+	_, err := client.Group.Update().
+		Where(
+			group.DescriptionEQ(simpleModeDefaultGroupDescription),
+			group.SubscriptionTypeEQ(service.SubscriptionTypeStandard),
+			group.DeletedAtIsNil(),
+		).
+		SetSubscriptionType(service.SubscriptionTypeSubscription).
+		Save(ctx)
+	if err != nil {
+		return fmt.Errorf("backfill auto-created default groups subscription type: %w", err)
 	}
 	return nil
 }
