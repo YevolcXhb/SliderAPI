@@ -402,7 +402,7 @@ func TestProxyIdentityUpdateInvalidatesProbeAndRejectsInFlightSnapshot(t *testin
 			require.ErrorIs(t, err, service.ErrUpstreamBillingProbeIdentityChanged)
 
 			rows, err := tx.QueryContext(ctx, `
-				SELECT COUNT(*), COALESCE(MAX(payload::text), '')
+				SELECT COUNT(*), COALESCE(MAX(CAST(payload AS CHAR)), '')
 				FROM scheduler_outbox
 				WHERE event_type = ?
 			`, service.SchedulerOutboxEventAccountBulkChanged)

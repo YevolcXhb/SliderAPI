@@ -68,11 +68,11 @@ VALUES (?, ?, ?, ?, NOW(), NOW())`, u.ID, affCode, 12.34)
 	require.InDelta(t, 17.84, balance, 1e-9)
 
 	affQuota := querySingleFloat(t, txCtx, client,
-		"SELECT aff_quota::double precision FROM user_affiliates WHERE user_id = ?", u.ID)
+		"SELECT CAST(aff_quota AS DOUBLE) FROM user_affiliates WHERE user_id = ?", u.ID)
 	require.InDelta(t, 0.0, affQuota, 1e-9)
 
 	persistedBalance := querySingleFloat(t, txCtx, client,
-		"SELECT balance::double precision FROM users WHERE id = ?", u.ID)
+		"SELECT CAST(balance AS DOUBLE) FROM users WHERE id = ?", u.ID)
 	require.InDelta(t, 17.84, persistedBalance, 1e-9)
 
 	ledgerCount := querySingleInt(t, txCtx, client,
@@ -80,11 +80,11 @@ VALUES (?, ?, ?, ?, NOW(), NOW())`, u.ID, affCode, 12.34)
 	require.Equal(t, 1, ledgerCount)
 
 	rows, err := client.QueryContext(txCtx, `
-SELECT amount::double precision,
-       balance_after::double precision,
-       aff_quota_after::double precision,
-       aff_frozen_quota_after::double precision,
-       aff_history_quota_after::double precision
+SELECT CAST(amount AS DOUBLE),
+       CAST(balance_after AS DOUBLE),
+       CAST(aff_quota_after AS DOUBLE),
+       CAST(aff_frozen_quota_after AS DOUBLE),
+       CAST(aff_history_quota_after AS DOUBLE)
 FROM user_affiliate_ledger
 WHERE user_id = ? AND action = 'transfer'
 LIMIT 1`, u.ID)
@@ -151,7 +151,7 @@ func TestAffiliateRepository_AccrueQuota_ReusesOuterTransaction(t *testing.T) {
 
 	// Visible inside the outer tx.
 	innerQuota := querySingleFloat(t, txCtx, client,
-		"SELECT aff_quota::double precision FROM user_affiliates WHERE user_id = ?", inviter.ID)
+		"SELECT CAST(aff_quota AS DOUBLE) FROM user_affiliates WHERE user_id = ?", inviter.ID)
 	require.InDelta(t, 3.5, innerQuota, 1e-9)
 
 	// Roll back the outer tx; if AccrueQuota had opened its own inner tx and
@@ -199,7 +199,7 @@ VALUES (?, ?, 0, 0, NOW(), NOW())`, u.ID, affCode)
 	require.InDelta(t, 0.0, balance, 1e-9)
 
 	persistedBalance := querySingleFloat(t, txCtx, client,
-		"SELECT balance::double precision FROM users WHERE id = ?", u.ID)
+		"SELECT CAST(balance AS DOUBLE) FROM users WHERE id = ?", u.ID)
 	require.InDelta(t, 3.21, persistedBalance, 1e-9)
 }
 

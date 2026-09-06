@@ -340,7 +340,7 @@ func TestBatchImageRepository_AppendEvent(t *testing.T) {
 	require.NoError(t, err)
 
 	var payload string
-	err = tx.QueryRowContext(ctx, `SELECT payload::text FROM batch_image_events WHERE job_id = ? AND event_type = 'job_created'`, batchID).Scan(&payload)
+	err = tx.QueryRowContext(ctx, `SELECT CAST(payload AS CHAR) FROM batch_image_events WHERE job_id = ? AND event_type = 'job_created'`, batchID).Scan(&payload)
 	require.NoError(t, err)
 	require.Contains(t, payload, batchID)
 }

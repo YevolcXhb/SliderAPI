@@ -21,6 +21,8 @@ import (
 	"github.com/imroc/req/v3"
 )
 
+var yesCaptchaHTTPClient = &http.Client{Timeout: 30 * time.Second}
+
 type grokOAuthClient struct {
 	tokenURL string
 }
@@ -39,7 +41,7 @@ func NewGrokOAuthClient() service.GrokOAuthClient {
 	// point at an attacker host and steal code/refresh tokens).
 	tokenURL, err := xai.ValidatedTokenURL()
 	if err != nil || strings.TrimSpace(tokenURL) == "" {
-		// Official allowlisted endpoint only — never EffectiveTokenURL() (raw env).
+		// Official allowlisted endpoint only 鈥?never EffectiveTokenURL() (raw env).
 		tokenURL = xai.DefaultTokenURL
 	}
 	return &grokOAuthClient{tokenURL: tokenURL}
@@ -282,7 +284,7 @@ func solveTurnstile(ctx context.Context) (string, error) {
 		return "", infraerrors.Newf(http.StatusBadGateway, "GROK_OAUTH_CAPTCHA_FAILED", "build captcha create request failed: %v", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := yesCaptchaHTTPClient.Do(req)
 	if err != nil {
 		return "", infraerrors.Newf(http.StatusBadGateway, "GROK_OAUTH_CAPTCHA_FAILED", "create captcha task failed: %v", err)
 	}
@@ -314,7 +316,7 @@ func solveTurnstile(ctx context.Context) (string, error) {
 			continue
 		}
 		req.Header.Set("Content-Type", "application/json")
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := yesCaptchaHTTPClient.Do(req)
 		if err != nil {
 			continue
 		}

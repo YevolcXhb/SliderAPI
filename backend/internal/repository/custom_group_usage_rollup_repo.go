@@ -33,7 +33,7 @@ func (r *usageLogRepository) getAllGroupUsageSummaryFromRollups(ctx context.Cont
 				CASE WHEN valid THEN closed_before ELSE DATE '1970-01-01' END AS closed_before,
 				CASE WHEN valid THEN retained_from ELSE '1970-01-01 00:00:00' END AS retained_from,
 				CASE
-					WHEN valid THEN CONVERT_TZ(closed_before, '+00:00', ?)
+					WHEN valid THEN CONVERT_TZ(closed_before, ?, '+00:00')
 					ELSE '1970-01-01 00:00:00'
 				END AS tail_start,
 				valid
@@ -47,7 +47,7 @@ func (r *usageLogRepository) getAllGroupUsageSummaryFromRollups(ctx context.Cont
 			FROM usage_group_daily_rollups rollup
 			CROSS JOIN state
 			WHERE state.valid
-				AND rollup.bucket_date >= (CONVERT_TZ(state.retained_from, '+00:00', ?))
+				AND rollup.bucket_date >= DATE(CONVERT_TZ(state.retained_from, '+00:00', ?))
 				AND rollup.bucket_date < state.closed_before
 			GROUP BY rollup.group_id
 		),
@@ -211,7 +211,7 @@ func (r *dashboardAggregationRepository) syncGroupUsageRollupsInTx(ctx context.C
 		GROUP BY 1, 2
 		ON DUPLICATE KEY UPDATE actual_cost = VALUES(actual_cost),
 			computed_at = VALUES(computed_at)
-	`, rebuildStart.UTC(), todayStart.UTC(), timezoneName); err != nil {
+	`, timezoneName, rebuildStart.UTC(), todayStart.UTC()); err != nil {
 		return fmt.Errorf("重建分组用量日桶: %w", err)
 	}
 

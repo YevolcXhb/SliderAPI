@@ -24,28 +24,28 @@ DROP TRIGGER IF EXISTS accounts_enforce_openai_long_context_billing_extra ON acc
 	var ordinaryID int64
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO accounts (name, platform, type, extra)
-VALUES ('migration-175-ordinary', 'openai', 'oauth', '{}'::jsonb)
+VALUES ('migration-175-ordinary', 'openai', 'oauth', CAST('{}' AS JSON))
 RETURNING id
 `).Scan(&ordinaryID))
 
 	var parentID int64
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO accounts (name, platform, type, extra)
-VALUES ('migration-175-parent', 'openai', 'oauth', '{"openai_long_context_billing_enabled":false}'::jsonb)
+VALUES ('migration-175-parent', 'openai', 'oauth', CAST('{"openai_long_context_billing_enabled":false}' AS JSON))
 RETURNING id
 `).Scan(&parentID))
 
 	var shadowID int64
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO accounts (name, platform, type, extra, parent_account_id, quota_dimension)
-VALUES ('migration-175-shadow', 'openai', 'oauth', '{}'::jsonb, ?, 'spark')
+VALUES ('migration-175-shadow', 'openai', 'oauth', CAST('{}' AS JSON), ?, 'spark')
 RETURNING id
 `, parentID).Scan(&shadowID))
 
 	var malformedLegacyID int64
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO accounts (name, platform, type, extra)
-VALUES ('migration-175-malformed-legacy', 'openai', 'oauth', '{"openai_long_context_billing_enabled":"false"}'::jsonb)
+VALUES ('migration-175-malformed-legacy', 'openai', 'oauth', CAST('{"openai_long_context_billing_enabled":"false"}' AS JSON))
 RETURNING id
 `).Scan(&malformedLegacyID))
 
@@ -56,7 +56,7 @@ RETURNING id
 
 	var ordinaryEnabled bool
 	require.NoError(t, tx.QueryRowContext(ctx, `
-SELECT (extra->>'openai_long_context_billing_enabled')::boolean
+SELECT JSON_EXTRACT(extra, '$.openai_long_context_billing_enabled')
 FROM accounts
 WHERE id = ?
 `, ordinaryID).Scan(&ordinaryEnabled))
@@ -64,7 +64,7 @@ WHERE id = ?
 
 	var shadowEnabled bool
 	require.NoError(t, tx.QueryRowContext(ctx, `
-SELECT (extra->>'openai_long_context_billing_enabled')::boolean
+SELECT JSON_EXTRACT(extra, '$.openai_long_context_billing_enabled')
 FROM accounts
 WHERE id = ?
 `, shadowID).Scan(&shadowEnabled))
@@ -80,14 +80,14 @@ WHERE event_type = 'account_changed' AND account_id = ?
 
 	var malformedLegacyEnabled bool
 	require.NoError(t, tx.QueryRowContext(ctx, `
-SELECT (extra->>'openai_long_context_billing_enabled')::boolean
+SELECT JSON_EXTRACT(extra, '$.openai_long_context_billing_enabled')
 FROM accounts
 WHERE id = ?
 `, malformedLegacyID).Scan(&malformedLegacyEnabled))
 	require.False(t, malformedLegacyEnabled)
 	_, err = tx.ExecContext(ctx, `
 UPDATE accounts
-SET extra = extra || '{"migration_175_unrelated_update":true}'::jsonb
+SET extra = JSON_MERGE_PATCH(extra, CAST('{"migration_175_unrelated_update":true}' AS JSON))
 WHERE id = ?
 `, malformedLegacyID)
 	require.NoError(t, err)
@@ -96,19 +96,19 @@ WHERE id = ?
 	require.NoError(t, err)
 	_, err = tx.ExecContext(ctx, `
 UPDATE accounts
-SET extra = '{"legacy_writer_replaced_extra":true}'::jsonb
+SET extra = CAST('{"legacy_writer_replaced_extra":true}' AS JSON)
 WHERE id = ?
 `, parentID)
 	require.NoError(t, err)
 	var parentEnabled bool
 	require.NoError(t, tx.QueryRowContext(ctx, `
-SELECT (extra->>'openai_long_context_billing_enabled')::boolean
+SELECT JSON_EXTRACT(extra, '$.openai_long_context_billing_enabled')
 FROM accounts
 WHERE id = ?
 `, parentID).Scan(&parentEnabled))
 	require.False(t, parentEnabled)
 	require.NoError(t, tx.QueryRowContext(ctx, `
-SELECT (extra->>'openai_long_context_billing_enabled')::boolean
+SELECT JSON_EXTRACT(extra, '$.openai_long_context_billing_enabled')
 FROM accounts
 WHERE id = ?
 `, shadowID).Scan(&shadowEnabled))
@@ -123,8 +123,8 @@ WHERE event_type = 'account_changed' AND account_id = ?
 
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO accounts (name, platform, type, extra)
-VALUES ('migration-175-rolling-writer', 'openai', 'oauth', '{}'::jsonb)
-RETURNING (extra->>'openai_long_context_billing_enabled')::boolean
+VALUES ('migration-175-rolling-writer', 'openai', 'oauth', CAST('{}' AS JSON))
+RETURNING JSON_EXTRACT(extra, '$.openai_long_context_billing_enabled')
 `).Scan(&ordinaryEnabled))
 	require.False(t, ordinaryEnabled)
 
@@ -132,12 +132,12 @@ RETURNING (extra->>'openai_long_context_billing_enabled')::boolean
 	require.NoError(t, err)
 	_, err = tx.ExecContext(ctx, `
 UPDATE accounts
-SET extra = JSON_SET(extra, '{openai_long_context_billing_enabled}', 'true'::jsonb, true)
+SET extra = JSON_SET(extra, '$.openai_long_context_billing_enabled', 'true')
 WHERE id = ?
 `, parentID)
 	require.NoError(t, err)
 	require.NoError(t, tx.QueryRowContext(ctx, `
-SELECT (extra->>'openai_long_context_billing_enabled')::boolean
+SELECT JSON_EXTRACT(extra, '$.openai_long_context_billing_enabled')
 FROM accounts
 WHERE id = ?
 `, shadowID).Scan(&shadowEnabled))
@@ -153,7 +153,7 @@ WHERE event_type = 'account_changed' AND account_id = ?
 
 	_, err = tx.ExecContext(ctx, `
 INSERT INTO accounts (name, platform, type, extra)
-VALUES ('migration-175-malformed', 'openai', 'oauth', '{"openai_long_context_billing_enabled":"false"}'::jsonb)
+VALUES ('migration-175-malformed', 'openai', 'oauth', CAST('{"openai_long_context_billing_enabled":"false"}' AS JSON))
 `)
 	require.ErrorContains(t, err, "openai_long_context_billing_enabled must be a boolean")
 }

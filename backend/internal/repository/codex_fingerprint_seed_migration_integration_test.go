@@ -30,32 +30,32 @@ func TestMigration225BackfillsOnlyEnabledOpenAIOAuthMissingOrMalformedSeeds(t *t
 	var missingID, blankID, malformedID, validID, offID, apiKeyID int64
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO accounts (name, platform, type, extra)
-VALUES ('migration-225-missing', 'openai', 'oauth', '{"codex_fingerprint_mode":"session"}'::jsonb)
+VALUES ('migration-225-missing', 'openai', 'oauth', CAST('{"codex_fingerprint_mode":"session"}' AS JSON))
 RETURNING id
 `).Scan(&missingID))
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO accounts (name, platform, type, extra)
-VALUES ('migration-225-blank', 'openai', 'oauth', '{"codex_fingerprint_mode":"device","codex_fingerprint_seed":""}'::jsonb)
+VALUES ('migration-225-blank', 'openai', 'oauth', CAST('{"codex_fingerprint_mode":"device","codex_fingerprint_seed":""}' AS JSON))
 RETURNING id
 `).Scan(&blankID))
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO accounts (name, platform, type, extra)
-VALUES ('migration-225-malformed', 'openai', 'oauth', '{"codex_fingerprint_mode":"full","codex_fingerprint_seed":"BAD"}'::jsonb)
+VALUES ('migration-225-malformed', 'openai', 'oauth', CAST('{"codex_fingerprint_mode":"full","codex_fingerprint_seed":"BAD"}' AS JSON))
 RETURNING id
 `).Scan(&malformedID))
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO accounts (name, platform, type, extra)
-VALUES ('migration-225-valid', 'openai', 'oauth', '{"codex_fingerprint_mode":"session","codex_fingerprint_seed":"11111111-1111-4111-8111-111111111111"}'::jsonb)
+VALUES ('migration-225-valid', 'openai', 'oauth', CAST('{"codex_fingerprint_mode":"session","codex_fingerprint_seed":"11111111-1111-4111-8111-111111111111"}' AS JSON))
 RETURNING id
 `).Scan(&validID))
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO accounts (name, platform, type, extra)
-VALUES ('migration-225-off', 'openai', 'oauth', '{"codex_fingerprint_mode":"off"}'::jsonb)
+VALUES ('migration-225-off', 'openai', 'oauth', CAST('{"codex_fingerprint_mode":"off"}' AS JSON))
 RETURNING id
 `).Scan(&offID))
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO accounts (name, platform, type, extra)
-VALUES ('migration-225-apikey', 'openai', 'apikey', '{"codex_fingerprint_mode":"session"}'::jsonb)
+VALUES ('migration-225-apikey', 'openai', 'apikey', CAST('{"codex_fingerprint_mode":"session"}' AS JSON))
 RETURNING id
 `).Scan(&apiKeyID))
 
@@ -65,7 +65,7 @@ RETURNING id
 	seedsAfterFirst := map[int64]string{}
 	for _, id := range []int64{missingID, blankID, malformedID, validID} {
 		var seed string
-		require.NoError(t, tx.QueryRowContext(ctx, `SELECT extra->>'codex_fingerprint_seed' FROM accounts WHERE id = ?`, id).Scan(&seed))
+		require.NoError(t, tx.QueryRowContext(ctx, `SELECT JSON_UNQUOTE(JSON_EXTRACT(extra, '$.codex_fingerprint_seed')) FROM accounts WHERE id = ?`, id).Scan(&seed))
 		requireCanonicalUUIDString(t, seed)
 		seedsAfterFirst[id] = seed
 	}
@@ -82,7 +82,7 @@ RETURNING id
 
 	for id, want := range seedsAfterFirst {
 		var got string
-		require.NoError(t, tx.QueryRowContext(ctx, `SELECT extra->>'codex_fingerprint_seed' FROM accounts WHERE id = ?`, id).Scan(&got))
+		require.NoError(t, tx.QueryRowContext(ctx, `SELECT JSON_UNQUOTE(JSON_EXTRACT(extra, '$.codex_fingerprint_seed')) FROM accounts WHERE id = ?`, id).Scan(&got))
 		require.Equal(t, want, got)
 	}
 }
@@ -107,7 +107,7 @@ func TestBulkUpdateGeneratesDistinctStableCodexFingerprintSeedsPerEligibleRow(t 
 		var id int64
 		require.NoError(t, integrationDB.QueryRowContext(ctx, `
 INSERT INTO accounts (name, platform, type, extra)
-VALUES (?, 'openai', ?, ?::jsonb)
+VALUES (?, 'openai', ?, CAST(? AS JSON))
 RETURNING id
 `, f.name, f.accountType, f.extra).Scan(&id))
 		ids = append(ids, id)
@@ -136,7 +136,7 @@ RETURNING id
 	readSeed := func(id int64) string {
 		t.Helper()
 		var seed string
-		require.NoError(t, integrationDB.QueryRowContext(ctx, `SELECT COALESCE(extra->>'codex_fingerprint_seed', '') FROM accounts WHERE id = ?`, id).Scan(&seed))
+		require.NoError(t, integrationDB.QueryRowContext(ctx, `SELECT COALESCE(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.codex_fingerprint_seed')), '') FROM accounts WHERE id = ?`, id).Scan(&seed))
 		return seed
 	}
 	firstSeeds := []string{readSeed(ids[0]), readSeed(ids[1]), readSeed(ids[2]), readSeed(ids[3])}

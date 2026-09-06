@@ -637,7 +637,7 @@ func revenueSnapshotUserFilter(column string, userID *int64, placeholder int) st
 	if userID == nil {
 		return ""
 	}
-	return fmt.Sprintf(" AND %s = ?", column)
+	return fmt.Sprintf(" AND %s = %d", column, *userID)
 }
 
 func (s *RevenueService) fillRevenueCashStats(ctx context.Context, params RevenueQueryParams, out *RevenueSummary, pointIndex map[string]int) error {
@@ -965,9 +965,6 @@ func (s *RevenueService) fillRevenueUsageStatsFromSnapshots(ctx context.Context,
 		FROM combined
 	`, statsSnapshotUserFilter, statsSnapshotUserFilter, statsLiveUserFilter)
 	args := []any{startDate, endDate, startDate, endDate, params.StartTime, params.EndTime}
-	if params.UserID != nil {
-		args = append(args, *params.UserID, *params.UserID, *params.UserID)
-	}
 	if err := s.querySingle(ctx, query, args,
 		&out.Usage.Requests,
 		&out.Usage.TotalTokens,
@@ -1023,9 +1020,6 @@ func (s *RevenueService) fillRevenueUsageStatsFromSnapshots(ctx context.Context,
 		ORDER BY bucket
 	`, trendSnapshotUserFilter, trendSnapshotUserFilter, trendLiveUserFilter)
 	trendArgs := []any{startDate, endDate, startDate, endDate, params.Timezone, params.StartTime, params.EndTime}
-	if params.UserID != nil {
-		trendArgs = append(trendArgs, *params.UserID, *params.UserID, *params.UserID)
-	}
 	rows, err := s.entClient.QueryContext(ctx, trendQuery, trendArgs...)
 	if err != nil {
 		return fmt.Errorf("query revenue usage snapshot trend: %w", err)
@@ -1342,9 +1336,6 @@ func (s *RevenueService) fillRevenueShareStatsFromSnapshots(ctx context.Context,
 		FROM combined
 	`, statsSnapshotUserFilter, statsSnapshotUserFilter, statsLiveUserFilter)
 	args := []any{startDate, endDate, startDate, endDate, params.StartTime, params.EndTime, revenueShareStatusApplied}
-	if params.UserID != nil {
-		args = append(args, *params.UserID, *params.UserID, *params.UserID)
-	}
 	if err := s.querySingle(ctx, query, args,
 		&out.Adjustments.ShareConsumerCharge,
 		&out.Adjustments.ShareAccountCost,
@@ -1398,9 +1389,6 @@ func (s *RevenueService) fillRevenueShareStatsFromSnapshots(ctx context.Context,
 		ORDER BY bucket
 	`, trendSnapshotUserFilter, trendSnapshotUserFilter, trendLiveUserFilter)
 	trendArgs := []any{startDate, endDate, startDate, endDate, params.Timezone, params.StartTime, params.EndTime, revenueShareStatusApplied}
-	if params.UserID != nil {
-		trendArgs = append(trendArgs, *params.UserID, *params.UserID, *params.UserID)
-	}
 	rows, err := s.entClient.QueryContext(ctx, trendQuery, trendArgs...)
 	if err != nil {
 		return fmt.Errorf("query revenue share snapshot trend: %w", err)
@@ -1820,9 +1808,6 @@ func (s *RevenueService) queryRevenueBreakdownFromSnapshots(ctx context.Context,
 	}
 
 	args := []any{startDate, endDate, startDate, endDate, revenueShareStatusApplied, params.StartTime, params.EndTime}
-	if params.UserID != nil {
-		args = append(args, *params.UserID, *params.UserID, *params.UserID)
-	}
 	args = append(args, params.TopLimit)
 	rows, err := s.entClient.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -2031,9 +2016,6 @@ func (s *RevenueService) queryRevenueShareOwnerBreakdownFromSnapshots(ctx contex
 		LIMIT ?
 	`, snapshotUserFilter, snapshotUserFilter, liveUserFilter)
 	args := []any{startDate, endDate, startDate, endDate, params.StartTime, params.EndTime, revenueShareStatusApplied}
-	if params.UserID != nil {
-		args = append(args, *params.UserID, *params.UserID)
-	}
 	args = append(args, params.TopLimit)
 	rows, err := s.entClient.QueryContext(ctx, query, args...)
 	if err != nil {

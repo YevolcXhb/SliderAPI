@@ -45,7 +45,7 @@ RETURNING id`).Scan(&wechatOpenIDOnlyUserID))
 	var syntheticAuthIdentityID int64
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO auth_identities (user_id, provider_type, provider_key, provider_subject, metadata)
-VALUES (?, 'wechat', 'wechat-main', 'openid-synthetic', '{"backfill_source":"synthetic_email"}'::jsonb)
+VALUES (?, 'wechat', 'wechat-main', 'openid-synthetic', CAST('{"backfill_source":"synthetic_email"}' AS JSON))
 RETURNING id`, wechatOpenIDOnlyUserID).Scan(&syntheticAuthIdentityID))
 
 	var linuxDoLegacyID int64
@@ -394,18 +394,18 @@ RETURNING id`, email).Scan(&userID))
 
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO auth_identities (user_id, provider_type, provider_key, provider_subject, metadata)
-VALUES (?, 'linuxdo', 'linuxdo', 'linuxdo-conflict', '{}'::jsonb)
+VALUES (?, 'linuxdo', 'linuxdo', 'linuxdo-conflict', CAST('{}' AS JSON))
 RETURNING id`, linuxdoConflictOwnerUserID).Scan(new(int64)))
 
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO auth_identities (user_id, provider_type, provider_key, provider_subject, metadata)
-VALUES (?, 'wechat', 'wechat-main', 'union-conflict', '{}'::jsonb)
+VALUES (?, 'wechat', 'wechat-main', 'union-conflict', CAST('{}' AS JSON))
 RETURNING id`, wechatConflictOwnerUserID).Scan(new(int64)))
 
 	var wechatChannelOwnerIdentityID int64
 	require.NoError(t, tx.QueryRowContext(ctx, `
 INSERT INTO auth_identities (user_id, provider_type, provider_key, provider_subject, metadata)
-VALUES (?, 'wechat', 'wechat-main', 'union-channel-owner', '{}'::jsonb)
+VALUES (?, 'wechat', 'wechat-main', 'union-channel-owner', CAST('{}' AS JSON))
 RETURNING id`, wechatChannelOwnerUserID).Scan(&wechatChannelOwnerIdentityID))
 
 	require.NoError(t, tx.QueryRowContext(ctx, `
@@ -418,7 +418,7 @@ INSERT INTO auth_identity_channels (
 	channel_subject,
 	metadata
 )
-VALUES (?, 'wechat', 'wechat-main', 'oa', 'wx-app-conflict', 'openid-channel-conflict', '{}'::jsonb)
+VALUES (?, 'wechat', 'wechat-main', 'oa', 'wx-app-conflict', 'openid-channel-conflict', CAST('{}' AS JSON))
 RETURNING id`, wechatChannelOwnerIdentityID).Scan(new(int64)))
 
 	var linuxdoConflictLegacyID int64
@@ -823,7 +823,7 @@ SELECT COUNT(*)
 FROM auth_identity_migration_reports
 WHERE report_type = 'legacy_external_identity_conflict'
   AND report_key IN (?, ?, ?, ?)
-  AND details ->> 'existing_identity_id' IS NOT NULL
+  AND JSON_UNQUOTE(JSON_EXTRACT(details, '$.existing_identity_id')) IS NOT NULL
 `, "legacy_external_identity:"+strconv.FormatInt(linuxDoFirstLegacyID, 10), "legacy_external_identity:"+strconv.FormatInt(linuxDoSecondLegacyID, 10), "legacy_external_identity:"+strconv.FormatInt(wechatFirstLegacyID, 10), "legacy_external_identity:"+strconv.FormatInt(wechatSecondLegacyID, 10)).Scan(&winnerAttributedReportCount))
 	require.Zero(t, winnerAttributedReportCount)
 }
@@ -922,7 +922,7 @@ func prepareLegacyExternalIdentitiesTable(t *testing.T, tx *sql.Tx, ctx context.
 
 	_, err := tx.ExecContext(ctx, `
 CREATE TABLE IF NOT EXISTS user_external_identities (
-	id BIGSERIAL PRIMARY KEY,
+	id BIGINT AUTO_INCREMENT PRIMARY KEY,
 	user_id BIGINT NOT NULL,
 	provider TEXT NOT NULL,
 	provider_user_id TEXT NOT NULL,
@@ -932,8 +932,8 @@ CREATE TABLE IF NOT EXISTS user_external_identities (
 	profile_url TEXT NOT NULL DEFAULT '',
 	avatar_url TEXT NOT NULL DEFAULT '',
 	metadata TEXT NOT NULL DEFAULT '{}',
-	created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+	created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 `)
 	require.NoError(t, err)
@@ -943,17 +943,17 @@ func truncateAuthIdentityLegacyFixtureTables(t *testing.T, tx *sql.Tx, ctx conte
 	t.Helper()
 
 	_, err := tx.ExecContext(ctx, `
-TRUNCATE TABLE
-	auth_identity_channels,
-	identity_adoption_decisions,
-	pending_auth_sessions,
-	auth_identities,
-	auth_identity_migration_reports,
-	user_provider_default_grants,
-	user_avatars,
-	user_external_identities,
-	users
-RESTART IDENTITY CASCADE;
+SET FOREIGN_KEY_CHECKS=0;
+DELETE FROM auth_identity_channels;
+DELETE FROM identity_adoption_decisions;
+DELETE FROM pending_auth_sessions;
+DELETE FROM auth_identities;
+DELETE FROM auth_identity_migration_reports;
+DELETE FROM user_provider_default_grants;
+DELETE FROM user_avatars;
+DELETE FROM user_external_identities;
+DELETE FROM users;
+SET FOREIGN_KEY_CHECKS=1;
 `)
 	require.NoError(t, err)
 }

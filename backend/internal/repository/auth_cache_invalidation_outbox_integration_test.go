@@ -89,7 +89,7 @@ func TestAuthCacheInvalidationTriggers_CoverSecurityMutationsOnly(t *testing.T) 
 	require.NoError(t, err)
 	clear()
 
-	_, err = integrationDB.ExecContext(ctx, "UPDATE groups SET name = name || '-cosmetic' WHERE id = ?", group.ID)
+	_, err = integrationDB.ExecContext(ctx, "UPDATE groups SET name = CONCAT(name, '-cosmetic') WHERE id = ?", group.ID)
 	require.NoError(t, err)
 	require.Zero(t, count(), "cosmetic group update must not enqueue")
 	_, err = integrationDB.ExecContext(ctx, "UPDATE groups SET allow_image_generation = NOT allow_image_generation WHERE id = ?", group.ID)

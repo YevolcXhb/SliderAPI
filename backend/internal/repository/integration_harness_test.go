@@ -40,6 +40,10 @@ var (
 	integrationRedis     *redisclient.Client
 
 	redisNamespaceSeq uint64
+
+	// integrationDSN is the raw MariaDB DSN (with multiStatements etc.) used by
+	// helpers that provision isolated per-test databases.
+	integrationDSN string
 )
 
 func TestMain(m *testing.M) {
@@ -95,6 +99,7 @@ func TestMain(m *testing.M) {
 		dsn += "&"
 	}
 	dsn += "parseTime=true&collation=utf8mb4_unicode_ci&multiStatements=true&loc=UTC"
+	integrationDSN = dsn
 
 	integrationDB, err = openSQLWithRetry(ctx, dsn, 30*time.Second)
 	if err != nil {

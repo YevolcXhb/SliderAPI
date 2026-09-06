@@ -26,7 +26,7 @@ type postgresPromptAuditSettingRepository struct{ db *sql.DB }
 func (r postgresPromptAuditSettingRepository) Get(ctx context.Context, key string) (*service.Setting, error) {
 	var value string
 	var updated time.Time
-	err := r.db.QueryRowContext(ctx, `SELECT value,updated_at FROM settings WHERE key=$1`, key).Scan(&value, &updated)
+	err := r.db.QueryRowContext(ctx, `SELECT value,updated_at FROM settings WHERE key=?`, key).Scan(&value, &updated)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, service.ErrSettingNotFound
 	}
@@ -45,8 +45,8 @@ func (r postgresPromptAuditSettingRepository) GetValue(ctx context.Context, key 
 }
 
 func (r postgresPromptAuditSettingRepository) Set(ctx context.Context, key, value string) error {
-	_, err := r.db.ExecContext(ctx, `INSERT INTO settings(key,value,updated_at) VALUES($1,$2,NOW())
-		ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=EXCLUDED.updated_at`, key, value)
+	_, err := r.db.ExecContext(ctx, `INSERT INTO settings(key,value,updated_at) VALUES(?,?,NOW())
+		ON DUPLICATE KEY UPDATE value=VALUES(value),updated_at=VALUES(updated_at)`, key, value)
 	return err
 }
 
@@ -82,8 +82,8 @@ func (r postgresPromptAuditSettingRepository) SetMultiple(ctx context.Context, v
 	}
 	defer func() { _ = tx.Rollback() }()
 	for key, value := range values {
-		if _, err := tx.ExecContext(ctx, `INSERT INTO settings(key,value,updated_at) VALUES($1,$2,NOW())
-			ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=EXCLUDED.updated_at`, key, value); err != nil {
+		if _, err := tx.ExecContext(ctx, `INSERT INTO settings(key,value,updated_at) VALUES(?,?,NOW())
+			ON DUPLICATE KEY UPDATE value=VALUES(value),updated_at=VALUES(updated_at)`, key, value); err != nil {
 			return err
 		}
 	}
@@ -108,7 +108,7 @@ func (r postgresPromptAuditSettingRepository) GetAll(ctx context.Context) (map[s
 }
 
 func (r postgresPromptAuditSettingRepository) Delete(ctx context.Context, key string) error {
-	_, err := r.db.ExecContext(ctx, `DELETE FROM settings WHERE key=$1`, key)
+	_, err := r.db.ExecContext(ctx, `DELETE FROM settings WHERE key=?`, key)
 	return err
 }
 

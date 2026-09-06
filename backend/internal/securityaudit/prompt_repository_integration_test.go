@@ -33,13 +33,13 @@ func openPromptAuditIntegrationDB(t *testing.T) *sql.DB {
 	defer cancel()
 	require.NoError(t, db.PingContext(ctx))
 	_, err = db.ExecContext(ctx, `
-		CREATE TABLE IF NOT EXISTS users (id BIGSERIAL PRIMARY KEY);
-		CREATE TABLE IF NOT EXISTS groups (id BIGSERIAL PRIMARY KEY);
-		CREATE TABLE IF NOT EXISTS api_keys (id BIGSERIAL PRIMARY KEY);
+		CREATE TABLE IF NOT EXISTS users (id BIGINT AUTO_INCREMENT PRIMARY KEY);
+		CREATE TABLE IF NOT EXISTS groups (id BIGINT AUTO_INCREMENT PRIMARY KEY);
+		CREATE TABLE IF NOT EXISTS api_keys (id BIGINT AUTO_INCREMENT PRIMARY KEY);
 		CREATE TABLE IF NOT EXISTS settings (
 			key VARCHAR(255) PRIMARY KEY,
 			value TEXT NOT NULL DEFAULT '',
-			updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+			updated_at DATETIME NOT NULL DEFAULT NOW()
 		);
 	`)
 	require.NoError(t, err)
@@ -60,7 +60,7 @@ func openPromptAuditIntegrationDB(t *testing.T) *sql.DB {
 
 func resetPromptAuditIntegrationDB(t *testing.T, db *sql.DB) {
 	t.Helper()
-	_, err := db.Exec(`TRUNCATE TABLE prompt_audit_events, prompt_audit_jobs, api_keys, users, groups, settings RESTART IDENTITY CASCADE`)
+	_, err := db.Exec(`SET FOREIGN_KEY_CHECKS=0; TRUNCATE TABLE prompt_audit_events, prompt_audit_jobs, api_keys, users, groups, settings; SET FOREIGN_KEY_CHECKS=1`)
 	require.NoError(t, err)
 }
 
@@ -147,7 +147,7 @@ func TestPromptAuditMigrationSchemaAndLeakageGate(t *testing.T) {
 	require.Error(t, err)
 	var jobID int64
 	require.NoError(t, db.QueryRowContext(ctx, `INSERT INTO prompt_audit_jobs DEFAULT VALUES RETURNING id`).Scan(&jobID))
-	_, err = db.ExecContext(ctx, `INSERT INTO prompt_audit_events(job_id,chunk_total) VALUES ($1,-1)`, jobID)
+	_, err = db.ExecContext(ctx, `INSERT INTO prompt_audit_events(job_id,chunk_total) VALUES (?,-1)`, jobID)
 	require.Error(t, err)
 }
 
@@ -175,7 +175,7 @@ func TestPromptAuditDatabasePersistsFullPromptOnEventsOnly(t *testing.T) {
 	require.NotContains(t, event.Snapshot.RedactedPreview, promptCanary)
 
 	var storedFullPrompt string
-	require.NoError(t, db.QueryRow(`SELECT full_prompt FROM prompt_audit_events WHERE id=$1`, event.ID).Scan(&storedFullPrompt))
+	require.NoError(t, db.QueryRow(`SELECT full_prompt FROM prompt_audit_events WHERE id=?`, event.ID).Scan(&storedFullPrompt))
 	require.Contains(t, storedFullPrompt, promptCanary)
 
 	detail, err := repo.GetEvent(ctx, event.ID)
@@ -183,7 +183,7 @@ func TestPromptAuditDatabasePersistsFullPromptOnEventsOnly(t *testing.T) {
 	require.Contains(t, detail.Snapshot.FullPrompt, promptCanary)
 
 	var jobJSON string
-	require.NoError(t, db.QueryRow(`SELECT row_to_json(j)::text FROM prompt_audit_jobs j WHERE id=$1`, event.JobID).Scan(&jobJSON))
+	require.NoError(t, db.QueryRow(`SELECT JSON_OBJECT('id', j.id, 'request_id', j.request_id, 'user_id', j.user_id, 'username_snapshot', j.username_snapshot, 'user_email_snapshot', j.user_email_snapshot, 'api_key_id', j.api_key_id, 'api_key_name_snapshot', j.api_key_name_snapshot, 'group_id', j.group_id, 'group_name', j.group_name, 'provider', j.provider, 'endpoint', j.endpoint, 'protocol', j.protocol, 'model', j.model, 'prompt_hash', j.prompt_hash, 'redacted_preview', j.redacted_preview, 'prompt_length', j.prompt_length, 'message_count', j.message_count, 'stage', j.stage, 'execution_mode', j.execution_mode, 'config_version', j.config_version, 'status', j.status, 'attempts', j.attempts, 'max_attempts', j.max_attempts, 'claim_version', j.claim_version, 'next_attempt_at', j.next_attempt_at, 'processing_started_at', j.processing_started_at, 'processed_at', j.processed_at, 'last_error_code', j.last_error_code, 'last_error_message', j.last_error_message, 'created_at', j.created_at, 'updated_at', j.updated_at) FROM prompt_audit_jobs j WHERE id=?`, event.JobID).Scan(&jobJSON))
 	require.NotContains(t, jobJSON, promptCanary)
 
 	failedJob, err := repo.CreateStagingWithCapacity(ctx, integrationSnapshot("error"), 1, 3, 10)
@@ -191,7 +191,7 @@ func TestPromptAuditDatabasePersistsFullPromptOnEventsOnly(t *testing.T) {
 	const errorCanary = "GUARD_RAW_RESPONSE_CANARY_SECRET"
 	require.NoError(t, repo.MarkStagingFailed(ctx, failedJob.ID, "payload_store_failed", "raw guard body: "+errorCanary))
 	var code, message string
-	require.NoError(t, db.QueryRow(`SELECT last_error_code,last_error_message FROM prompt_audit_jobs WHERE id=$1`, failedJob.ID).Scan(&code, &message))
+	require.NoError(t, db.QueryRow(`SELECT last_error_code,last_error_message FROM prompt_audit_jobs WHERE id=?`, failedJob.ID).Scan(&code, &message))
 	require.Equal(t, "payload_store_failed", code)
 	require.Equal(t, stableErrorMessage(code), message)
 	require.NotContains(t, message, errorCanary)
@@ -281,9 +281,9 @@ func TestPromptAuditRepositoryAdmissionClaimFencingAndEventTransaction(t *testin
 	require.NotNil(t, event)
 	var status string
 	var eventCount int
-	require.NoError(t, db.QueryRow(`SELECT status FROM prompt_audit_jobs WHERE id=$1`, secondClaim.ID).Scan(&status))
+	require.NoError(t, db.QueryRow(`SELECT status FROM prompt_audit_jobs WHERE id=?`, secondClaim.ID).Scan(&status))
 	require.Equal(t, "done", status)
-	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM prompt_audit_events WHERE job_id=$1`, secondClaim.ID).Scan(&eventCount))
+	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM prompt_audit_events WHERE job_id=?`, secondClaim.ID).Scan(&eventCount))
 	require.Equal(t, 1, eventCount)
 
 	staging, err := repo.CreateStagingWithCapacity(ctx, integrationSnapshot("stale"), 1, 3, 10)
@@ -291,7 +291,7 @@ func TestPromptAuditRepositoryAdmissionClaimFencingAndEventTransaction(t *testin
 	reclaimed, err = repo.ReclaimStale(ctx, time.Now().Add(time.Hour), time.Now().Add(time.Hour), 10)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), reclaimed)
-	require.NoError(t, db.QueryRow(`SELECT status FROM prompt_audit_jobs WHERE id=$1`, staging.ID).Scan(&status))
+	require.NoError(t, db.QueryRow(`SELECT status FROM prompt_audit_jobs WHERE id=?`, staging.ID).Scan(&status))
 	require.Equal(t, "failed", status)
 }
 
@@ -322,11 +322,11 @@ func TestPromptAuditRepositoryForeignKeysFiltersAndStableIdentitySnapshots(t *te
 	require.Equal(t, snapshot.UserEmailSnapshot, page.Items[0].Snapshot.UserEmailSnapshot)
 	require.Equal(t, snapshot.APIKeyNameSnapshot, page.Items[0].Snapshot.APIKeyNameSnapshot)
 
-	_, err = db.Exec(`DELETE FROM users WHERE id=$1`, userID)
+	_, err = db.Exec(`DELETE FROM users WHERE id=?`, userID)
 	require.NoError(t, err)
-	_, err = db.Exec(`DELETE FROM api_keys WHERE id=$1`, apiKeyID)
+	_, err = db.Exec(`DELETE FROM api_keys WHERE id=?`, apiKeyID)
 	require.NoError(t, err)
-	_, err = db.Exec(`DELETE FROM groups WHERE id=$1`, groupID)
+	_, err = db.Exec(`DELETE FROM groups WHERE id=?`, groupID)
 	require.NoError(t, err)
 	stored, err := repo.GetEvent(ctx, event.ID)
 	require.NoError(t, err)
@@ -337,7 +337,7 @@ func TestPromptAuditRepositoryForeignKeysFiltersAndStableIdentitySnapshots(t *te
 	require.Equal(t, snapshot.UserEmailSnapshot, stored.Snapshot.UserEmailSnapshot)
 	require.Equal(t, snapshot.APIKeyNameSnapshot, stored.Snapshot.APIKeyNameSnapshot)
 
-	_, err = db.Exec(`DELETE FROM prompt_audit_jobs WHERE id=$1`, event.JobID)
+	_, err = db.Exec(`DELETE FROM prompt_audit_jobs WHERE id=?`, event.JobID)
 	require.NoError(t, err)
 	_, err = repo.GetEvent(ctx, event.ID)
 	require.ErrorIs(t, err, ErrEventNotFound)
@@ -374,14 +374,14 @@ func TestPromptAuditRepositoryHighWaterAndSafeDeletion(t *testing.T) {
 
 	processingEvent, err := repo.RecordBlocking(ctx, integrationSnapshot("processing"), 1, integrationResult(EventCritical), true)
 	require.NoError(t, err)
-	_, err = db.Exec(`UPDATE prompt_audit_jobs SET status='processing' WHERE id=$1`, processingEvent.JobID)
+	_, err = db.Exec(`UPDATE prompt_audit_jobs SET status='processing' WHERE id=?`, processingEvent.JobID)
 	require.NoError(t, err)
 	deleteResult, err := repo.DeleteEvent(ctx, processingEvent.ID)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), deleteResult.DeletedEvents)
 	require.Zero(t, deleteResult.DeletedJobs)
 	var remaining int
-	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM prompt_audit_jobs WHERE id=$1`, processingEvent.JobID).Scan(&remaining))
+	require.NoError(t, db.QueryRow(`SELECT COUNT(*) FROM prompt_audit_jobs WHERE id=?`, processingEvent.JobID).Scan(&remaining))
 	require.Equal(t, 1, remaining, "processing jobs must not be deleted as orphans")
 
 	batchOne, err := repo.RecordBlocking(ctx, integrationSnapshot("batch-one"), 1, integrationResult(EventCritical), true)

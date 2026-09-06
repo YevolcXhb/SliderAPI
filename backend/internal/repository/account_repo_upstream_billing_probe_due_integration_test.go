@@ -32,7 +32,7 @@ func TestListDueUpstreamBillingProbeAccountsHandlesInvalidCalendarDate(t *testin
 		}`, nextProbeAt)
 		err := scanSingleRow(ctx, tx, `
 			INSERT INTO accounts (name, platform, type, status, extra)
-			VALUES (?, 'openai', ?, 'active', ?::jsonb)
+			VALUES (?, 'openai', ?, 'active', CAST(? AS JSON))
 			RETURNING id
 		`, []any{name, service.AccountTypeAPIKey, extra}, &id)
 		require.NoError(t, err)
@@ -59,7 +59,7 @@ func insertUpstreamBillingProbeAccount(ctx context.Context, t *testing.T, tx sql
 	}`, nextProbeAt)
 	err := scanSingleRow(ctx, tx, `
 		INSERT INTO accounts (name, platform, type, status, extra)
-		VALUES (?, 'openai', ?, 'active', ?::jsonb)
+		VALUES (?, 'openai', ?, 'active', CAST(? AS JSON))
 		RETURNING id
 	`, []any{name, service.AccountTypeAPIKey, extra}, &id)
 	require.NoError(t, err)
@@ -176,7 +176,7 @@ func TestListDueUpstreamBillingProbeAccountsIncludesAllAPIKeyPlatforms(t *testin
 		}`, nextProbeAt)
 		err := scanSingleRow(ctx, tx, `
 			INSERT INTO accounts (name, platform, type, status, extra)
-			VALUES (?, ?, ?, 'active', ?::jsonb)
+			VALUES (?, ?, ?, 'active', CAST(? AS JSON))
 			RETURNING id
 		`, []any{name, platform, accountType, extra}, &id)
 		require.NoError(t, err)
@@ -192,7 +192,7 @@ func TestListDueUpstreamBillingProbeAccountsIncludesAllAPIKeyPlatforms(t *testin
 	var disabledID int64
 	err = scanSingleRow(ctx, tx, `
 		INSERT INTO accounts (name, platform, type, status, extra)
-		VALUES ('probe-grok-disabled', 'grok', ?, 'active', '{}'::jsonb)
+		VALUES ('probe-grok-disabled', 'grok', ?, 'active', CAST('{}' AS JSON))
 		RETURNING id
 	`, []any{service.AccountTypeAPIKey}, &disabledID)
 	require.NoError(t, err)

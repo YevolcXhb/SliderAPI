@@ -203,7 +203,7 @@ func (r *usageLogRepository) GetDailyStatsAggregated(ctx context.Context, userID
 		ORDER BY 1
 	`
 
-	rows, err := r.sql.QueryContext(ctx, query, userID, startTime, endTime, tzName)
+	rows, err := r.sql.QueryContext(ctx, query, tzName, userID, startTime, endTime)
 	if err != nil {
 		return nil, err
 	}

@@ -13,7 +13,7 @@ import (
 
 func TestGetErrorLogByID_APIKeyPrefixAndUpstreamStatus(t *testing.T) {
 	ctx := context.Background()
-	_, _ = integrationDB.ExecContext(ctx, "TRUNCATE ops_error_logs RESTART IDENTITY CASCADE")
+	_, _ = integrationDB.ExecContext(ctx, "TRUNCATE TABLE ops_error_logs")
 	repo := NewOpsRepository(integrationDB).(*opsRepository)
 
 	var plainID int64

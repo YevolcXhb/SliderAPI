@@ -1,0 +1,42 @@
+name: Integration
+
+# Integration tests are self-contained via testcontainers-go (they spin up their
+# own MariaDB 10.11 + Redis 8 containers), so this job only needs Docker, which
+# is available on ubuntu-latest. No GitHub Actions service containers are
+# required (the previous, service-container-based job was disabled because the
+# harness does not consume DATABASE_* env vars -- it provisions its own DSN).
+#
+# Runtime verification is pending a CI run: enable this workflow (or trigger it
+# via the Actions tab) and confirm the testcontainers MariaDB image has the IANA
+# timezone tables the CONVERT_TZ-based guards rely on (requireNamedTimezoneTables
+# skips gracefully if absent).
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/integration-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          check-latest: false
+          cache: true
+          cache-dependency-path: backend/go.sum
+      - name: Verify Go version
+        working-directory: backend
+        run: |
+          go version | grep -q 'go1.27.0'
+      - name: "Integration tests (testcontainers: MariaDB 10.11 + Redis 8)"
+        working-directory: backend
+        run: make test-integration

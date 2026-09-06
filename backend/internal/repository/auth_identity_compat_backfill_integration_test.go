@@ -29,11 +29,11 @@ func TestAuthIdentityCompatBackfillMigration_AllowsLongReportTypes(t *testing.T)
 	require.NoError(t, err)
 
 	_, err = tx.ExecContext(ctx, `
-DROP TABLE IF EXISTS auth_identity_migration_reports CASCADE;
-DROP TABLE IF EXISTS auth_identity_channels CASCADE;
-DROP TABLE IF EXISTS identity_adoption_decisions CASCADE;
-DROP TABLE IF EXISTS pending_auth_sessions CASCADE;
-DROP TABLE IF EXISTS auth_identities CASCADE;
+DROP TABLE IF EXISTS auth_identity_migration_reports;
+DROP TABLE IF EXISTS auth_identity_channels;
+DROP TABLE IF EXISTS identity_adoption_decisions;
+DROP TABLE IF EXISTS pending_auth_sessions;
+DROP TABLE IF EXISTS auth_identities;
 
 ALTER TABLE users
 	DROP COLUMN IF EXISTS signup_source,

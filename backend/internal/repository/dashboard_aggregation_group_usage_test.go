@@ -47,7 +47,7 @@ func TestDashboardAggregationRepositorySyncGroupUsageRollupsRebuildsWhenTimezone
 		WithArgs("2026-03-01", "2026-03-01", "2026-03-09", "2026-03-09").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(`INSERT INTO usage_group_daily_rollups`).
-		WithArgs(retainedFrom, todayStart, "America/New_York").
+		WithArgs("America/New_York", retainedFrom, todayStart).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(`UPDATE usage_group_rollup_state`).
 		WithArgs("2026-03-09", retainedFrom, "America/New_York").
@@ -76,7 +76,7 @@ func TestDashboardAggregationRepositorySyncGroupUsageRollupsPublishesWatermarkLa
 		WithArgs("2026-05-01", "2026-08-13", "2026-08-14", "2026-08-14").
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(`INSERT INTO usage_group_daily_rollups`).
-		WithArgs(rebuildStart, todayStart, "Asia/Shanghai").
+		WithArgs("Asia/Shanghai", rebuildStart, todayStart).
 		WillReturnResult(sqlmock.NewResult(0, 2))
 	mock.ExpectExec(`UPDATE usage_group_rollup_state`).
 		WithArgs("2026-08-14", retainedFrom, "Asia/Shanghai").
@@ -166,7 +166,7 @@ func TestDashboardAggregationRepositoryRecomputeRangeRebuildsGroupRollupsBeforeC
 		WithArgs(startDate, startDate, service.GroupUsageDate(todayStart), service.GroupUsageDate(todayStart)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(`INSERT INTO usage_group_daily_rollups`).
-		WithArgs(rebuildStart.UTC(), todayStart.UTC(), "Asia/Shanghai").
+		WithArgs("Asia/Shanghai", rebuildStart.UTC(), todayStart.UTC()).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec(`UPDATE usage_group_rollup_state`).
 		WithArgs(service.GroupUsageDate(todayStart), start, "Asia/Shanghai").

@@ -56,7 +56,7 @@ func TestAuthCacheInvalidationTrigger_ProfitControlColumns(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	_, err := integrationDB.ExecContext(ctx, "UPDATE groups SET name = name || '-cosmetic' WHERE id = ?", group.ID)
+	_, err := integrationDB.ExecContext(ctx, "UPDATE groups SET name = CONCAT(name, '-cosmetic') WHERE id = ?", group.ID)
 	require.NoError(t, err)
 	require.Zero(t, count(), "cosmetic 更新不得入队（既有语义回归）")
 
