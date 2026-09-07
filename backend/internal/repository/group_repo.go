@@ -726,7 +726,9 @@ func (r *groupRepository) ListActiveByPlatform(ctx context.Context, platform str
 }
 
 func (r *groupRepository) ExistsByName(ctx context.Context, name string) (bool, error) {
-	return r.client.Group.Query().Where(group.NameEQ(name)).Exist(ctx)
+	return r.client.Group.Query().
+		Where(group.NameEQ(name), group.DeletedAtIsNil()).
+		Exist(ctx)
 }
 
 // ExistsByIDs 批量检查分组是否存在（仅检查未软删除记录）。
@@ -897,7 +899,16 @@ func (r *groupRepository) DeleteCascade(ctx context.Context, id int64) ([]int64,
 		return nil, err
 	}
 
-	// 5. Soft-delete group itself.
+	// 5. Free the unique name slot, then soft-delete the group itself.
+	// The unique index on groups.name is not partial (see migration 016), so a
+	// soft-deleted row would otherwise keep occupying the name and block
+	// re-creating a group with the same name. Suffixing with the row id keeps
+	// the soft-deleted row name unique while releasing the original name.
+	if _, err := txClient.Group.UpdateOneID(id).
+		SetName(fmt.Sprintf("%s#deleted#%d", groupSvc.Name, id)).
+		Save(ctx); err != nil {
+		return nil, err
+	}
 	if _, err := txClient.Group.Delete().Where(group.IDEQ(id)).Exec(ctx); err != nil {
 		return nil, err
 	}
