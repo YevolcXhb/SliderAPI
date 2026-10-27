@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+web/node_modules/
+console/node_modules/
+
+# Build output (web/dist is REQUIRED in git: Dockerfile.backend go:embed needs it)
+console/public/
+console/dist/
+
+# Logs & local files
+*.log
+.data/
+*.db
+*.sqlite*
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local env
+.env
+.env.local
