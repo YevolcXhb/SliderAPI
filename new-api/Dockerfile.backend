@@ -18,5 +18,6 @@ RUN go mod download
 COPY . .
 RUN go build -ldflags "-s -w -X 'github.com/QuantumNous/new-api/common.Version=v1.0.0-rc.40'" -o new-api
 
-FROM calciumion/new-api:v1.0.0-rc.40-amd64
+ARG TARGETARCH
+FROM calciumion/new-api:v1.0.0-rc.40-${TARGETARCH}
 COPY --from=builder /build/new-api /new-api
