@@ -1,0 +1,14 @@
+{
+  "name": "sliderapi-console",
+  "version": "0.1.0",
+  "private": true,
+  "description": "SliderAPI 控制台 —— 基于 new-api 公开 REST API 的精简控制台（API 密钥管理 + 订阅/套餐计费）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}

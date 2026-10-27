@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>数据迁移 · SliderAPI</title>
+    <link rel="icon" href="/favicon.ico" />
+    <link href="/deepseek-theme.css" rel="stylesheet" />
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+          'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+        background: var(--background);
+        color: var(--foreground);
+        min-height: 100vh;
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      a { color: var(--primary); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+
+      .topbar {
+        position: sticky; top: 0; z-index: 10;
+        display: flex; align-items: center; gap: 14px;
+        padding: 14px 24px;
+        background: var(--card);
+        border-bottom: 1px solid var(--border);
+      }
+      .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; font-size: 16px; }
+      .brand .dot { width: 10px; height: 10px; border-radius: 3px; background: var(--primary); }
+      .topbar .spacer { flex: 1; }
+      .topbar .who { color: var(--muted-foreground); font-size: 13px; }
+
+      .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 24px 64px; }
+      .lead { color: var(--muted-foreground); margin: 0 0 20px; }
+
+      .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+      @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius, 0.75rem);
+        padding: 20px;
+      }
+      .card h2 { margin: 0 0 4px; font-size: 15px; font-weight: 650; }
+      .card .hint { color: var(--muted-foreground); font-size: 13px; margin: 0 0 16px; }
+
+      .field { margin-bottom: 12px; }
+      .field label { display: block; font-size: 13px; color: var(--muted-foreground); margin-bottom: 5px; }
+      input[type='text'], select {
+        width: 100%; padding: 9px 11px;
+        background: var(--background);
+        border: 1px solid var(--input);
+        border-radius: 8px;
+        color: var(--foreground);
+        font-size: 13px;
+        font-family: inherit;
+      }
+      input[type='text']:focus, select:focus { outline: 2px solid var(--ring); outline-offset: -1px; }
+      .check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted-foreground); margin: 4px 0 14px; }
+      .check input { accent-color: var(--primary); }
+
+      button {
+        font-family: inherit; font-size: 13px; font-weight: 600;
+        padding: 9px 16px; border-radius: 8px; cursor: pointer;
+        border: 1px solid transparent; transition: opacity .15s, background .15s;
+      }
+      button:disabled { opacity: .5; cursor: not-allowed; }
+      .btn-primary { background: var(--primary); color: var(--primary-foreground); }
+      .btn-ghost { background: var(--secondary); color: var(--secondary-foreground); border-color: var(--border); }
+      .btn-danger { background: transparent; color: var(--destructive, #dc2626); border-color: var(--border); padding: 6px 10px; }
+      .btn-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+      .drop {
+        border: 1.5px dashed var(--border);
+        border-radius: 10px;
+        padding: 22px 16px;
+        text-align: center;
+        color: var(--muted-foreground);
+        font-size: 13px;
+        cursor: pointer;
+        margin-bottom: 12px;
+        background: var(--muted);
+      }
+      .drop.active { border-color: var(--primary); color: var(--primary); }
+      .drop strong { color: var(--foreground); }
+
+      .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; margin-top: 6px; }
+      .stat { background: var(--muted); border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px; }
+      .stat .k { font-size: 12px; color: var(--muted-foreground); }
+      .stat .v { font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
+      .kv { display: flex; gap: 8px; font-size: 13px; margin: 3px 0; }
+      .kv .k { color: var(--muted-foreground); min-width: 68px; }
+      .kv .v { word-break: break-all; }
+
+      .banner { border-radius: 10px; padding: 12px 14px; font-size: 13px; margin-bottom: 16px; border: 1px solid var(--border); }
+      .banner.warn { background: color-mix(in oklch, #f59e0b 12%, var(--card)); border-color: color-mix(in oklch, #f59e0b 40%, var(--border)); }
+      .banner.err { background: color-mix(in oklch, #dc2626 12%, var(--card)); border-color: color-mix(in oklch, #dc2626 40%, var(--border)); }
+      .banner.ok { background: color-mix(in oklch, #16a34a 12%, var(--card)); border-color: color-mix(in oklch, #16a34a 40%, var(--border)); }
+
+      .log {
+        background: oklch(0.16 0.02 265);
+        color: oklch(0.92 0.01 265);
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        padding: 12px 14px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 12.5px;
+        line-height: 1.55;
+        height: 300px;
+        overflow: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      .log .e { color: #fca5a5; }
+      .log .o { color: oklch(0.92 0.01 265); }
+      .log .ph { color: oklch(0.62 0.02 265); }
+
+      .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); }
+      .badge.running { background: color-mix(in oklch, #3b82f6 18%, var(--card)); }
+      .badge.success { background: color-mix(in oklch, #16a34a 18%, var(--card)); }
+      .badge.failed { background: color-mix(in oklch, #dc2626 18%, var(--card)); }
+      .badge.idle { background: var(--muted); color: var(--muted-foreground); }
+
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--border); }
+      th { color: var(--muted-foreground); font-weight: 500; }
+      td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+      .section-title { font-size: 14px; font-weight: 650; margin: 26px 0 12px; }
+      .muted { color: var(--muted-foreground); }
+      .hidden { display: none !important; }
+      .mt { margin-top: 14px; }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span> SliderAPI 控制台</div>
+      <span class="muted">·</span>
+      <span>数据迁移</span>
+      <div class="spacer"></div>
+      <span class="who" id="who"></span>
+      <a class="btn-ghost" href="/" style="padding:7px 12px;border-radius:8px;border:1px solid var(--border)">返回控制台</a>
+    </div>
+
+    <div class="wrap">
+      <p class="lead">
+        在两台服务器之间搬迁 new-api 的 SQLite 数据库：旧服务器<b>导出</b>迁移包，新服务器<b>导入</b>覆盖。
+        导出会短暂停止容器以保证快照一致；导入前会自动备份原库，失败自动回滚。
+      </p>
+
+      <div id="authBox" class="banner warn hidden"></div>
+      <div id="noticeBox" class="hidden"></div>
+
+      <div id="main" class="hidden">
+        <div class="card">
+          <h2>当前实例</h2>
+          <p class="hint">目标容器由 Docker 自动探测；容器名不一致时可在下方手动指定。</p>
+          <div class="btn-row" style="justify-content: space-between; align-items: flex-start">
+            <div style="flex:1; min-width: 260px">
+              <div id="envInfo" class="muted">正在探测…</div>
+            </div>
+            <button class="btn-ghost" id="btnInspect">重新探测</button>
+          </div>
+          <div id="envStats" class="stats"></div>
+        </div>
+
+        <div class="grid mt">
+          <div class="card">
+            <h2>导出（在旧服务器执行）</h2>
+            <p class="hint">打包当前实例的数据库，生成可下载的迁移包。</p>
+            <div class="field">
+              <label>容器名（留空自动探测）</label>
+              <input type="text" id="exportContainer" placeholder="例如 new-api" />
+            </div>
+            <label class="check"><input type="checkbox" id="exportKeepStopped" /> 导出后保持容器停止（不自动重启）</label>
+            <div class="btn-row">
+              <button class="btn-primary" id="btnExport">导出数据库</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>导入（在新服务器执行）</h2>
+            <p class="hint">用迁移包整体覆盖本实例数据库，原有用户、令牌、渠道与设置都会被替换。</p>
+            <div class="drop" id="drop">
+              <div id="dropText">点击选择或拖拽 <strong>.tar.gz</strong> 迁移包到此处</div>
+            </div>
+            <input type="file" id="fileInput" accept=".gz,.tgz,application/gzip" class="hidden" />
+            <div class="field">
+              <label>容器名（留空自动探测）</label>
+              <input type="text" id="importContainer" placeholder="例如 new-api" />
+            </div>
+            <div class="field">
+              <label>覆盖配置项（可选，逗号分隔 K=V）</label>
+              <input type="text" id="importSetOption" placeholder="ServerAddress=https://new.example.com" />
+            </div>
+            <label class="check"><input type="checkbox" id="importConfirm" /> 我已知晓这会覆盖目标实例的全部数据</label>
+            <div class="btn-row">
+              <button class="btn-primary" id="btnImport" disabled>导入并覆盖</button>
+              <button class="btn-ghost" id="btnClearFile">清除所选文件</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">
+          任务日志 <span id="jobBadge" class="badge idle">空闲</span>
+        </div>
+        <div class="card">
+          <div class="log" id="log"><span class="ph">暂无任务。发起导出或导入后，这里会实时显示迁移过程。</span></div>
+          <div class="btn-row mt" id="jobActions"></div>
+        </div>
+
+        <div class="section-title">迁移包</div>
+        <div class="card">
+          <table>
+            <thead>
+              <tr><th>类型</th><th>文件名</th><th>大小</th><th>时间</th><th style="width:120px">操作</th></tr>
+            </thead>
+            <tbody id="pkgBody">
+              <tr><td colspan="5" class="muted">加载中…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        'use strict';
+
+        var state = { token: '', user: null, jobId: null, job: null, poll: null, file: null };
+
+        function $(id) { return document.getElementById(id); }
+
+        function setTheme() {
+          var mq = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+          function apply() {
+            var saved = null;
+            try { saved = localStorage.getItem('sliderapi-migrate-theme'); } catch (e) {}
+            var dark = saved ? saved === 'dark' : (mq ? mq.matches : false);
+            document.documentElement.classList.toggle('dark', dark);
+          }
+          apply();
+          if (mq && mq.addEventListener) mq.addEventListener('change', apply);
+        }
+        setTheme();
+
+        function notice(kind, html) {
+          var box = $('noticeBox');
+          box.className = 'banner ' + kind;
+          box.innerHTML = html;
+        }
+
+        function clearNotice() { $('noticeBox').className = 'hidden'; }
+
+        function api(path, options) {
+          options = options || {};
+          var headers = options.headers || {};
+          if (state.token) headers.Authorization = 'Bearer ' + state.token;
+          options.headers = headers;
+          options.credentials = 'same-origin';
+          return fetch(path, options).then(function (res) {
+            return res.json().catch(function () { return {}; }).then(function (body) {
+              if (!res.ok) {
+                var err = new Error((body && body.message) || ('请求失败（' + res.status + '）'));
+                err.status = res.status;
+                err.body = body;
+                throw err;
+              }
+              return body;
+            });
+          });
+        }
+
+        function bootstrapAuth() {
+          return fetch('/api/user/auth/refresh', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'content-type': 'application/json' },
+          })
+            .then(function (res) { return res.json().catch(function () { return {}; }); })
+            .then(function (body) {
+              var data = body && body.data;
+              if (body && body.success && data && data.access_token) {
+                state.token = data.access_token;
+                state.user = data.user || null;
+                return { ok: true };
+              }
+              return { ok: false, reason: 'anonymous' };
+            })
+            .catch(function () { return { ok: false, reason: 'anonymous' }; });
+        }
+
+        function showAuthProblem(reason) {
+          var box = $('authBox');
+          box.className = 'banner ' + (reason === 'insufficient' ? 'err' : 'warn');
+          box.innerHTML =
+            reason === 'insufficient'
+              ? '当前账号不是管理员，无法使用数据迁移功能。<a href="/">返回控制台</a>'
+              : '未登录或登录状态已失效，请先登录控制台后再访问本页。<a href="/">前往登录</a>';
+        }
+
+        function fmtBytes(n) {
+          if (n === null || n === undefined) return '-';
+          if (n < 1024) return n + ' B';
+          if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+          if (n < 1024 * 1024 * 1024) return (n / 1024 / 1024).toFixed(2) + ' MB';
+          return (n / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+        }
+
+        function fmtTime(ms) {
+          var d = new Date(ms);
+          var p = function (x) { return String(x).padStart(2, '0'); };
+          return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' +
+            p(d.getHours()) + ':' + p(d.getMinutes());
+        }
+
+        function renderEnv(info) {
+          var el = $('envInfo');
+          var statsEl = $('envStats');
+          statsEl.innerHTML = '';
+          if (!info || info.ok === false) {
+            el.innerHTML = '<span class="muted">探测失败：' + escapeHtml((info && info.error) || '未知原因') + '</span>';
+            return;
+          }
+          var c = info.container || {};
+          var rows = [
+            ['容器', c.name || '-'],
+            ['镜像', c.image || '-'],
+            ['数据卷', c.volume ? c.volume + ' → /data' : '-'],
+            ['状态', c.running ? '运行中' : '已停止'],
+          ];
+          if (info.options && info.options.SystemName) rows.push(['站点名', info.options.SystemName]);
+          if (info.options && info.options.ServerAddress) rows.push(['地址', info.options.ServerAddress]);
+          el.innerHTML = rows.map(function (r) {
+            return '<div class="kv"><span class="k">' + escapeHtml(r[0]) + '</span><span class="v">' +
+              escapeHtml(String(r[1])) + '</span></div>';
+          }).join('') + (info.note ? '<div class="muted" style="margin-top:6px">' + escapeHtml(info.note) + '</div>' : '')
+            + (info.error ? '<div class="muted" style="margin-top:6px">' + escapeHtml(info.error) + '</div>' : '');
+
+          var s = info.stats || {};
+          var keys = ['users', 'tokens', 'channels', 'redemptions', 'subscription_plans'];
+          keys.forEach(function (k) {
+            if (s[k] === undefined) return;
+            var div = document.createElement('div');
+            div.className = 'stat';
+            div.innerHTML = '<div class="k">' + escapeHtml(k) + '</div><div class="v">' + escapeHtml(String(s[k])) + '</div>';
+            statsEl.appendChild(div);
+          });
+        }
+
+        function escapeHtml(str) {
+          return String(str).replace(/[&<>"']/g, function (ch) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+          });
+        }
+
+        function inspect() {
+          $('envInfo').innerHTML = '正在探测…';
+          return api('/migrate/api/inspect', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({}),
+          })
+            .then(renderEnv)
+            .catch(function (err) { renderEnv({ ok: false, error: err.message }); });
+        }
+
+        // 下载走 fetch 而不是 <a href>：迁移接口要 Authorization 头，
+        // 而浏览器导航不会带该头，直接点链接会被 401 拒掉。
+        function downloadFile(url, filename) {
+          notice('ok', '正在准备下载…');
+          fetch(url, {
+            credentials: 'same-origin',
+            headers: state.token ? { Authorization: 'Bearer ' + state.token } : {},
+          })
+            .then(function (res) {
+              if (!res.ok) throw new Error('下载失败（' + res.status + '）');
+              return res.blob();
+            })
+            .then(function (blob) {
+              var objectUrl = URL.createObjectURL(blob);
+              var a = document.createElement('a');
+              a.href = objectUrl;
+              a.download = filename || 'sliderapi-migration.tar.gz';
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+              setTimeout(function () { URL.revokeObjectURL(objectUrl); }, 4000);
+              clearNotice();
+            })
+            .catch(function (err) { notice('err', escapeHtml(err.message)); });
+        }
+
+        function loadPackages() {
+          return api('/migrate/api/packages').then(function (body) {
+            var items = (body && body.packages) || [];
+            var tbody = $('pkgBody');
+            if (items.length === 0) {
+              tbody.innerHTML = '<tr><td colspan="5" class="muted">暂无迁移包</td></tr>';
+              return;
+            }
+            tbody.innerHTML = items.map(function (p) {
+              var kindLabel = p.kind === 'exports' ? '导出包' : '上传包';
+              return '<tr>' +
+                '<td>' + kindLabel + '</td>' +
+                '<td>' + escapeHtml(p.name) + '</td>' +
+                '<td class="num">' + fmtBytes(p.bytes) + '</td>' +
+                '<td class="num">' + fmtTime(p.mtime) + '</td>' +
+                '<td><button class="btn-ghost" data-dl-kind="' + p.kind + '" data-dl-name="' + escapeHtml(p.name) + '">下载</button> ' +
+                '<button class="btn-danger" data-kind="' + p.kind + '" data-name="' + escapeHtml(p.name) + '">删除</button></td>' +
+                '</tr>';
+            }).join('');
+            Array.prototype.forEach.call(tbody.querySelectorAll('button[data-name]'), function (btn) {
+              btn.addEventListener('click', function () {
+                var kind = btn.getAttribute('data-kind');
+                var name = btn.getAttribute('data-name');
+                if (!window.confirm('确认删除 ' + name + ' ？')) return;
+                api('/migrate/api/packages/' + kind + '/' + encodeURIComponent(name), { method: 'DELETE' })
+                  .then(loadPackages)
+                  .catch(function (err) { notice('err', escapeHtml(err.message)); });
+              });
+            });
+            Array.prototype.forEach.call(tbody.querySelectorAll('button[data-dl-name]'), function (btn) {
+              btn.addEventListener('click', function () {
+                var kind = btn.getAttribute('data-dl-kind');
+                var name = btn.getAttribute('data-dl-name');
+                downloadFile('/migrate/api/packages/' + kind + '/' + encodeURIComponent(name), name);
+              });
+            });
+          }).catch(function (err) { notice('err', escapeHtml(err.message)); });
+        }
+
+        function renderJob(job) {
+          state.job = job;
+          var log = $('log');
+          var badge = $('jobBadge');
+          var actions = $('jobActions');
+          if (!job) {
+            badge.className = 'badge idle';
+            badge.textContent = '空闲';
+            log.innerHTML = '<span class="ph">暂无任务。发起导出或导入后，这里会实时显示迁移过程。</span>';
+            actions.innerHTML = '';
+            return;
+          }
+          badge.className = 'badge ' + job.status;
+          badge.textContent = job.status === 'running' ? '进行中' : (job.status === 'success' ? '已完成' : '失败');
+
+          var lines = job.logs || [];
+          log.innerHTML = lines.length
+            ? lines.map(function (l) {
+                return '<span class="' + (l.s === 'err' ? 'e' : 'o') + '">' + escapeHtml(l.m) + '</span>';
+              }).join('\n')
+            : '<span class="ph">等待输出…</span>';
+          log.scrollTop = log.scrollHeight;
+
+          var html = '';
+          if (job.status !== 'running') {
+            if (job.kind === 'export' && job.status === 'success' && job.result && job.result.downloadUrl) {
+              html += '<button class="btn-primary" id="btnDownloadJob">下载迁移包 ' +
+                escapeHtml(job.result.archiveName || '') + '</button>';
+            }
+            if (job.error) {
+              html += '<span class="muted">' + escapeHtml(job.error) + '</span>';
+            }
+          }
+          actions.innerHTML = html;
+
+          var downloadBtn = $('btnDownloadJob');
+          if (downloadBtn) {
+            downloadBtn.addEventListener('click', function () {
+              downloadFile(job.result.downloadUrl, job.result.archiveName);
+            });
+          }
+        }
+
+        function pollJob(id) {
+          api('/migrate/api/jobs/' + id).then(function (body) {
+            var job = body && body.job;
+            renderJob(job);
+            if (job && job.status === 'running') {
+              state.poll = setTimeout(function () { pollJob(id); }, 1000);
+            } else {
+              state.poll = null;
+              loadPackages();
+              if (job && job.status === 'success') {
+                notice('ok', job.kind === 'export'
+                  ? '导出完成，可在任务日志下方下载迁移包。'
+                  : '导入完成，容器已启动并通过校验。');
+              } else if (job && job.status === 'failed') {
+                notice('err', '任务失败：' + escapeHtml(job.error || '请查看日志'));
+              }
+              inspect();
+            }
+          }).catch(function (err) {
+            state.poll = null;
+            notice('err', escapeHtml(err.message));
+          });
+        }
+
+        function startPolling(id) {
+          state.jobId = id;
+          if (state.poll) clearTimeout(state.poll);
+          pollJob(id);
+        }
+
+        function doExport() {
+          clearNotice();
+          var container = $('exportContainer').value.trim();
+          api('/migrate/api/export', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              container: container || undefined,
+              keepStopped: $('exportKeepStopped').checked,
+            }),
+          }).then(function (body) {
+            startPolling(body.job.id);
+          }).catch(function (err) { notice('err', escapeHtml(err.message)); });
+        }
+
+        function setFile(file) {
+          state.file = file || null;
+          $('dropText').innerHTML = file
+            ? '已选择 <strong>' + escapeHtml(file.name) + '</strong>（' + fmtBytes(file.size) + '）'
+            : '点击选择或拖拽 <strong>.tar.gz</strong> 迁移包到此处';
+          updateImportButton();
+        }
+
+        function updateImportButton() {
+          $('btnImport').disabled = !(state.file && $('importConfirm').checked);
+        }
+
+        function doImport() {
+          if (!state.file) return;
+          if (!window.confirm('导入会整体覆盖本实例数据库，且新实例原有的用户、令牌、渠道与设置都会被替换。确认继续？')) return;
+          clearNotice();
+          var headers = {
+            'content-type': 'application/octet-stream',
+            'x-file-name': encodeURIComponent(state.file.name),
+          };
+          var container = $('importContainer').value.trim();
+          var setOption = $('importSetOption').value.trim();
+          if (container) headers['x-container'] = encodeURIComponent(container);
+          if (setOption) headers['x-set-option'] = encodeURIComponent(setOption);
+
+          $('btnImport').disabled = true;
+          $('btnImport').textContent = '上传中…';
+          api('/migrate/api/import', { method: 'POST', headers: headers, body: state.file })
+            .then(function (body) {
+              $('btnImport').textContent = '导入并覆盖';
+              updateImportButton();
+              setFile(null);
+              $('fileInput').value = '';
+              startPolling(body.job.id);
+            })
+            .catch(function (err) {
+              $('btnImport').textContent = '导入并覆盖';
+              updateImportButton();
+              notice('err', escapeHtml(err.message));
+            });
+        }
+
+        function wire() {
+          $('btnInspect').addEventListener('click', inspect);
+          $('btnExport').addEventListener('click', doExport);
+          $('btnImport').addEventListener('click', doImport);
+          $('importConfirm').addEventListener('change', updateImportButton);
+          $('btnClearFile').addEventListener('click', function () { setFile(null); $('fileInput').value = ''; });
+
+          $('drop').addEventListener('click', function () { $('fileInput').click(); });
+          $('fileInput').addEventListener('change', function (e) {
+            setFile(e.target.files && e.target.files[0]);
+          });
+          ['dragenter', 'dragover'].forEach(function (ev) {
+            $('drop').addEventListener(ev, function (e) {
+              e.preventDefault();
+              $('drop').classList.add('active');
+            });
+          });
+          ['dragleave', 'drop'].forEach(function (ev) {
+            $('drop').addEventListener(ev, function (e) {
+              e.preventDefault();
+              $('drop').classList.remove('active');
+            });
+          });
+          $('drop').addEventListener('drop', function (e) {
+            var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            if (f) setFile(f);
+          });
+        }
+
+        function start() {
+          wire();
+          bootstrapAuth().then(function (result) {
+            if (!result.ok) {
+              showAuthProblem(result.reason);
+              return;
+            }
+            if (!state.user || Number(state.user.role) < 10) {
+              showAuthProblem('insufficient');
+              return;
+            }
+            $('authBox').className = 'hidden';
+            $('main').className = '';
+            $('who').textContent = (state.user.username || '') + '（管理员）';
+            inspect();
+            loadPackages();
+            api('/migrate/api/env').then(function (body) {
+              if (body && body.activeJob) {
+                startPolling(body.activeJob.id);
+              }
+            }).catch(function () {});
+          });
+        }
+
+        start();
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,22 @@
+# 临时构建文件：仅重新编译 Go 后端，复用官方运行时镜像。
+# 前端由 console 托管，因此这里只嵌入本地已构建的 web/dist 以满足 go:embed。
+FROM golang:1.26.1-alpine@sha256:2389ebfa5b7f43eeafbd6be0c3700cc46690ef842ad962f6c5bd6be49ed82039 AS builder
+
+ENV GO111MODULE=on CGO_ENABLED=0 GOWORK=off
+ENV GOPROXY=https://goproxy.cn,direct
+ENV GOSUMDB=off
+ARG TARGETOS
+ARG TARGETARCH
+ENV GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64}
+ENV GOEXPERIMENT=greenteagc
+
+WORKDIR /build
+ADD go.mod go.sum ./
+ADD relaykit/go.mod ./relaykit/go.mod
+RUN go mod download
+
+COPY . .
+RUN go build -ldflags "-s -w -X 'github.com/QuantumNous/new-api/common.Version=v1.0.0-rc.40'" -o new-api
+
+FROM calciumion/new-api:v1.0.0-rc.40-amd64
+COPY --from=builder /build/new-api /new-api

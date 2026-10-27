@@ -1,0 +1,124 @@
+/* ============================================================
+   SliderAPI —— DeepSeek 配色覆盖层
+   ============================================================
+
+   前端是 new-api 官方构建产物，主题通过 :root/.dark 的 oklch CSS 变量驱动
+   （见 web/src/styles/theme.css）。这里不改官方源码，只在其后覆盖变量，
+   因此官方前端升级、重新构建后依然生效。
+
+   关键点：官方深色态的**中性色 chroma 全为 0（纯灰）**，例如
+   `--background: oklch(0.235 0 0)`、`--card: oklch(0.285 0 0)`。
+   只改 --primary 的话，大面积背景仍是中性灰，观感依旧"是 new-api"。
+   所以这里把背景 / 卡片 / 次级 / 静音 / 侧栏 / 边框整套中性色都加上
+   冷蓝色度（hue 265）与少量 chroma，形成 DeepSeek 那种偏冷的暗色底。
+
+   DeepSeek 品牌蓝 #4D6BFE ≈ oklch(0.60 0.212 265)。
+   浅色态主色用 0.60 保证白字对比度；深色态提亮到 0.68。
+
+   官方切主题时在 <html> 上加 class='dark'/'light'（data-theme 属性不同步），
+   因此深色覆盖只匹配 html.dark。
+   ============================================================ */
+
+:root {
+  /* —— 品牌主色：DeepSeek 蓝 —— */
+  --primary: oklch(0.60 0.212 265);
+  --primary-foreground: oklch(1 0 0);
+  --ring: oklch(0.60 0.212 265);
+  --sidebar-primary: oklch(0.60 0.212 265);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-ring: oklch(0.60 0.212 265);
+
+  /* —— 中性色统一带冷蓝调（取代官方纯灰） —— */
+  --background: oklch(0.995 0.002 265);
+  --foreground: oklch(0.20 0.012 265);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.20 0.012 265);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.20 0.012 265);
+
+  --secondary: oklch(0.955 0.022 265);
+  --secondary-foreground: oklch(0.48 0.20 265);
+  --muted: oklch(0.965 0.012 265);
+  --muted-foreground: oklch(0.50 0.020 265);
+  --accent: oklch(0.955 0.022 265);
+  --accent-foreground: oklch(0.44 0.20 265);
+
+  --info: oklch(0.60 0.212 265);
+
+  /* —— 侧栏：近白带蓝调 —— */
+  --sidebar: oklch(0.982 0.008 265);
+  --sidebar-foreground: oklch(0.20 0.012 265);
+  --sidebar-accent: oklch(0.945 0.026 265);
+  --sidebar-accent-foreground: oklch(0.44 0.20 265);
+  --sidebar-border: oklch(0.92 0.014 265);
+
+  /* —— 图表色：以品牌蓝为主色，其余同色系延伸 —— */
+  --chart-1: oklch(0.60 0.212 265);
+  --chart-2: oklch(0.68 0.16 250);
+  --chart-3: oklch(0.55 0.20 285);
+  --chart-4: oklch(0.72 0.14 220);
+  --chart-5: oklch(0.64 0.18 300);
+
+  --overview-accent-1: oklch(0.60 0.212 265);
+  --overview-accent-2: oklch(0.68 0.16 250);
+  --overview-accent-3: oklch(0.55 0.20 285);
+
+  /* —— 边线与输入框：冷调 —— */
+  --border: oklch(0.925 0.010 265);
+  --input: oklch(0.925 0.010 265);
+
+  /* —— 骨架屏 —— */
+  --skeleton-base: oklch(0.95 0.012 265);
+  --skeleton-highlight: oklch(0.90 0.018 265);
+
+  /* —— 圆角略收，贴近 DeepSeek 的克制感 —— */
+  --radius: 0.75rem;
+}
+
+/* 深色态：官方在 <html> 上加 class='dark' */
+html.dark {
+  /* —— 暗色底：冷蓝黑，而不是官方的中性灰 —— */
+  --background: oklch(0.195 0.020 265);
+  --foreground: oklch(0.965 0.008 265);
+  --card: oklch(0.245 0.024 265);
+  --card-foreground: oklch(0.965 0.008 265);
+  --popover: oklch(0.265 0.026 265);
+  --popover-foreground: oklch(0.965 0.008 265);
+
+  --primary: oklch(0.68 0.19 265);
+  --primary-foreground: oklch(0.16 0.02 265);
+  --ring: oklch(0.68 0.19 265);
+  --sidebar-primary: oklch(0.68 0.19 265);
+  --sidebar-ring: oklch(0.68 0.19 265);
+
+  --secondary: oklch(0.295 0.030 265);
+  --secondary-foreground: oklch(0.88 0.06 265);
+  --muted: oklch(0.275 0.026 265);
+  --muted-foreground: oklch(0.76 0.020 265);
+  --accent: oklch(0.315 0.045 265);
+  --accent-foreground: oklch(0.90 0.05 265);
+
+  --info: oklch(0.68 0.19 265);
+
+  --sidebar: oklch(0.175 0.022 265);
+  --sidebar-foreground: oklch(0.955 0.010 265);
+  --sidebar-accent: oklch(0.30 0.045 265);
+  --sidebar-accent-foreground: oklch(0.90 0.05 265);
+  --sidebar-border: oklch(1 0 0 / 11%);
+
+  --chart-1: oklch(0.68 0.19 265);
+  --chart-2: oklch(0.72 0.15 250);
+  --chart-3: oklch(0.62 0.18 285);
+  --chart-4: oklch(0.76 0.13 220);
+  --chart-5: oklch(0.70 0.17 300);
+
+  --overview-accent-1: oklch(0.68 0.19 265);
+  --overview-accent-2: oklch(0.72 0.15 250);
+  --overview-accent-3: oklch(0.62 0.18 285);
+
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 15%);
+
+  --skeleton-base: oklch(0.30 0.028 265);
+  --skeleton-highlight: oklch(0.40 0.036 265);
+}
