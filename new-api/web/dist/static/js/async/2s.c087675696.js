@@ -1,1 +1,0 @@
-"use strict";(self.rspackChunknewapi_web=self.rspackChunknewapi_web||[]).push([["2s"],{Ia(e,s,n){n.r(s);let p=n("UV").m;n.d(s,{},{component:p})}}]);
